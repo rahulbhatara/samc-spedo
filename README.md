@@ -78,28 +78,126 @@ Sets the Odometer value of the Speedometer.
 - **Parameters:**
   - `distance` (number): The distance in miles.
 
-## Usage
+### Testing SetRPM(), setSpeed(), setHealth() & setFuel() 
+```javascript
+(function() {
+  let currentMph = 0;
+  let direction = 1;
+  const maxMph = 200;
+  const minMph = 0;
+  const stepMph = 2;
+  const delay = 100;
+  const mphToMs = 0.44704;
 
-1. Include the script in your HTML file:
-   ```html
-   <script src="cef.js"></script>
-   ```
+  const call = (name, val) => { if (typeof window[name] === 'function') window[name](val); };
 
-2. Call the appropriate functions to update the dashboard:
-   ```javascript
-   setEngine(true);
-   setSpeed(25); // 25 m/s
-   setRPM(0.75); // 75% RPM
-   setFuel(0.85); // 85% fuel
-   setHealth(1.0); // 100% health
-   setGear(1); // 1st Gear
-   setHeadlights(1); // Headlights on
-   setLeftIndicator(false);
-   setSeatbelts(true); // Fastened
-   setOdometer(123.4);
-   ```
+  if (window.carSimulation) clearInterval(window.carSimulation);
 
-## Dependencies
-- Modern web browser with JavaScript enabled.
-- No external libraries required.
-- No GPU acceleration required.
+  window.carSimulation = setInterval(() => {
+    call('setSpeed', currentMph * mphToMs);
+
+    let gear = 'N', rpm = 0.12;
+    if (currentMph > 0) {
+      if (currentMph <= 25) { gear = '1'; rpm = 0.2 + (currentMph / 25) * 0.7; }
+      else if (currentMph <= 55) { gear = '2'; rpm = 0.3 + ((currentMph - 25) / 30) * 0.6; }
+      else if (currentMph <= 85) { gear = '3'; rpm = 0.4 + ((currentMph - 55) / 30) * 0.55; }
+      else if (currentMph <= 115) { gear = '4'; rpm = 0.45 + ((currentMph - 85) / 30) * 0.5; }
+      else if (currentMph <= 145) { gear = '5'; rpm = 0.5 + ((currentMph - 115) / 30) * 0.45; }
+      else if (currentMph <= 175) { gear = '6'; rpm = 0.55 + ((currentMph - 145) / 30) * 0.4; }
+      else { gear = '7'; rpm = 0.6 + ((currentMph - 175) / 25) * 0.38; }
+    }
+    call('setGear', gear);
+    call('setRPM', Math.min(1, Math.max(0, rpm)));
+
+    const progress = currentMph / maxMph;
+    call('setFuel', Math.max(0.01, 1 - progress));
+    call('setHealth', Math.max(0.01, 1 - (progress * 0.15)));
+    if (currentMph >= maxMph && direction === 1) {
+      direction = -1;
+    } else if (currentMph <= minMph && direction === -1) {
+      clearInterval(window.carSimulation);
+      return;
+    }
+
+    currentMph += (direction * stepMph);
+    currentMph = Math.max(minMph, Math.min(maxMph, currentMph));
+  }, delay);
+})();
+```
+
+### Testing SetRPM() & setSpeed()
+```javascript
+(function() {
+  let currentMph = 0;
+  let direction = 1;
+  const maxMph = 200;
+  const minMph = 0;
+  const stepMph = 2;
+  const delay = 100;
+  const mphToMs = 0.44704;
+
+  const call = (name, val) => { if (typeof window[name] === 'function') window[name](val); };
+
+  if (window.carSimulation) clearInterval(window.carSimulation);
+
+  window.carSimulation = setInterval(() => {
+    call('setSpeed', currentMph * mphToMs);
+
+    let gear = 'N', rpm = 0.12;
+    if (currentMph > 0) {
+      if (currentMph <= 25) { gear = '1'; rpm = 0.2 + (currentMph / 25) * 0.7; }
+      else if (currentMph <= 55) { gear = '2'; rpm = 0.3 + ((currentMph - 25) / 30) * 0.6; }
+      else if (currentMph <= 85) { gear = '3'; rpm = 0.4 + ((currentMph - 55) / 30) * 0.55; }
+      else if (currentMph <= 115) { gear = '4'; rpm = 0.45 + ((currentMph - 85) / 30) * 0.5; }
+      else if (currentMph <= 145) { gear = '5'; rpm = 0.5 + ((currentMph - 115) / 30) * 0.45; }
+      else if (currentMph <= 175) { gear = '6'; rpm = 0.55 + ((currentMph - 145) / 30) * 0.4; }
+      else { gear = '7'; rpm = 0.6 + ((currentMph - 175) / 25) * 0.38; }
+    }
+    call('setGear', gear);
+    call('setRPM', Math.min(1, Math.max(0, rpm)));
+
+    if (currentMph >= maxMph && direction === 1) {
+      direction = -1;
+    } else if (currentMph <= minMph && direction === -1) {
+      clearInterval(window.carSimulation);
+      return;
+    }
+
+    currentMph += (direction * stepMph);
+    currentMph = Math.max(minMph, Math.min(maxMph, currentMph));
+  }, delay);
+})();
+```
+
+### Testing setFuel() & setHealth()
+```javascript
+(function() {
+  let step = 0;
+  let direction = 1;
+  const maxStep = 100;
+  const minStep = 0;
+  const stepChange = 2;
+  const delay = 100;
+
+  const call = (name, val) => { if (typeof window[name] === 'function') window[name](val); };
+
+  if (window.carSimulation) clearInterval(window.carSimulation);
+
+  window.carSimulation = setInterval(() => {
+    const progress = step / maxStep;
+
+    call('setFuel', Math.max(0.01, parseFloat((1 - progress).toFixed(2))));
+    call('setHealth', Math.max(0.01, parseFloat((1 - (progress * 0.15)).toFixed(2))));
+
+    if (step >= maxStep && direction === 1) {
+      direction = -1;
+    } else if (step <= minStep && direction === -1) {
+      clearInterval(window.carSimulation);
+      return;
+    }
+
+    step += (direction * stepChange);
+    step = Math.max(minStep, Math.min(maxStep, step));
+  }, delay);
+})();
+```
