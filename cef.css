@@ -1,7 +1,7 @@
 /* =========================================================================
    DRIVER HUD — Clean Speedometer CEF Overlay CSS
-   Removed all developer simulation panel elements.
-   Optimized for in-game overlay (transparent background, bottom-right positioning).
+   Optimized for CPU-only rendering (no GPU, no backdrop-filter).
+   All dial rendering moved to Canvas 2D — SVG rules removed.
    ========================================================================= */
 
 @font-face {
@@ -39,7 +39,8 @@ body {
     -webkit-font-smoothing: antialiased;
     /* Sharper fonts in Chromium/CEF */
     -moz-osx-font-smoothing: grayscale;
-    text-rendering: optimizeLegibility;
+    text-rendering: optimizeSpeed;
+    /* Faster text rendering on CPU-only */
 }
 
 /* === MAIN DASHBOARD CONTAINER (Fixed to Bottom Right Corner) === */
@@ -56,144 +57,11 @@ body {
     z-index: 100;
 }
 
-/* === GENERAL SVG === */
-.speedo-svg {
-    /* No filter — software rendered CEF */
-}
-
-.dial-glow {
-    display: none;
-    /* Disabled glow to optimize CPU rasterization */
-}
-
-.dial-bg {
-    fill: rgba(10, 10, 10, 0.65);
-    /* Darker transparent backdrop for high visibility */
-    stroke: rgba(255, 255, 255, 0.08);
-    stroke-width: 1.5;
-}
-
-/* Speed Zones Arcs */
-.zone-arc {
-    fill: none;
-    stroke-width: 4;
-    stroke-linecap: round;
-    opacity: 0.6;
-    transition: opacity 0.3s;
-}
-
-.zone-green {
-    stroke: #2ecc71;
-}
-
-.zone-yellow {
-    stroke: #f1c40f;
-}
-
-.zone-red {
-    stroke: #e74c3c;
-    opacity: 0.8;
-}
-
-/* Ticks styling */
-.tick {
-    stroke: rgba(255, 255, 255, 0.6);
-    stroke-width: 2;
-}
-
-.tick-sub {
-    stroke: rgba(255, 255, 255, 0.3);
-    stroke-width: 1;
-}
-
-/* Dial Labels (Texts) */
-.dial-label {
-    font-family: 'Formula1', sans-serif;
-    font-size: 10px;
-    font-weight: 700;
-    fill: rgba(255, 255, 255, 0.5);
-    text-anchor: middle;
-    dominant-baseline: middle;
-}
-
-.dial-label.label-left {
-    text-anchor: start;
-}
-
-.dial-label.label-right {
-    text-anchor: end;
-}
-
-.dial-label-rpm {
-    font-family: 'Formula1', sans-serif;
-    font-size: 9px;
-    font-weight: 700;
-    fill: rgba(255, 255, 255, 0.5);
-    text-anchor: middle;
-    dominant-baseline: middle;
-}
-
-.dial-label-rpm.redline-label {
-    fill: #ff4757;
-}
-
-/* Needles (animated via JS lerp — zero CSS overhead) */
-.dial-needle {
-    stroke: #ff4757;
-    stroke-width: 3.5;
-    stroke-linecap: round;
-    transform-origin: 150px 150px;
-    will-change: transform;
-    /* Optimizes repaint boundaries under CPU-only render */
-}
-
-.needle-rpm {
-    stroke-width: 2.8;
-    transform-origin: 100px 100px;
-}
-
-/* Cap centers */
-.dial-cap-outer {
-    fill: #1e1e1e;
-    stroke: rgba(255, 255, 255, 0.2);
-    stroke-width: 1;
-}
-
-.dial-cap-inner {
-    fill: #ff4757;
-}
-
 /* === PANEL LAYOUTS === */
 .speedo-panel {
     display: flex;
     flex-direction: column;
     justify-content: center;
-}
-
-/* Bottom panel: Status Indicators (HP on left, Fuel on right) */
-.bottom-status-capsule {
-    display: flex;
-    gap: 16px;
-    background: transparent;
-    /* Fully transparent */
-    border: none;
-    padding: 4px 0;
-    width: 250px;
-    /* Widened slightly for longer bars */
-    margin-top: 2px;
-    /* Pulls capsule down to leave a clean 5px gap below dials */
-    align-self: center;
-    /* Centered relative to dashboard container */
-    z-index: 10;
-    /* Ensures it renders clearly on top */
-}
-
-.bottom-status-capsule .linear-gauge-container {
-    flex: 1;
-    /* Split width 50/50 */
-    display: flex;
-    align-items: center;
-    gap: 5px;
 }
 
 /* Center panel: Dials & Indicators */
@@ -203,51 +71,18 @@ body {
 }
 
 .speedo-dials-container {
-    display: flex;
-    align-items: flex-end;
     position: relative;
     height: 180px;
     width: 310px;
-    /* Compact overlapping layout */
     margin-top: -15px;
     /* Pulls the dials closer to the top border */
 }
 
-/* Speedometer layout */
-.speedo-speed {
+/* === CANVAS (replaces all SVG dials) === */
+#speedo-canvas {
     position: absolute;
     left: 0;
-    bottom: 0;
-    width: 220px;
-    height: 180px;
-    z-index: 2;
-    /* Changed from 1 to 2 to place Speed dial on top */
-}
-
-/* RPM layout */
-.speedo-rpm {
-    position: absolute;
-    right: 0;
-    bottom: 15px;
-    width: 150px;
-    height: 150px;
-    z-index: 1;
-    /* Changed from 2 to 1 to place RPM dial underneath */
-}
-
-.rpm-unit {
-    font-family: 'Formula1', sans-serif;
-    font-size: 10px;
-    font-weight: 700;
-    fill: rgba(255, 255, 255, 0.6);
-    text-anchor: middle;
-}
-
-.rpm-multiplier {
-    font-family: 'Formula1', sans-serif;
-    font-size: 7px;
-    fill: rgba(255, 255, 255, 0.3);
-    text-anchor: middle;
+    top: 0;
 }
 
 /* Gear & Speed Digital overlay centered in the Speed dial */
@@ -341,10 +176,9 @@ body {
     fill: rgba(255, 255, 255, 0.15);
 }
 
-/* Turn Indicator state toggled by class '.on' */
+/* Turn Indicator active state (blink handled by JS) */
 .indicator-arrow.on svg {
     fill: #2ecc71;
-    animation: blink-indicator 0.5s infinite;
 }
 
 /* Headlights styling */
@@ -352,10 +186,9 @@ body {
     fill: #3498db;
 }
 
-/* Seatbelt warning styling */
+/* Seatbelt warning styling (blink handled by JS) */
 .indicator-seatbelt.on svg {
     fill: #e74c3c;
-    animation: blink-indicator 0.6s infinite;
 }
 
 /* Engine indicator styling */
@@ -371,26 +204,37 @@ body {
     stroke: #2ecc71; /* Engine running: green */
 }
 
-@keyframes blink-indicator {
-
-    0%,
-    100% {
-        opacity: 1;
-    }
-
-    50% {
-        opacity: 0.2;
-    }
+/* === BOTTOM STATUS CAPSULE (HP & Fuel) === */
+.bottom-status-capsule {
+    display: flex;
+    gap: 16px;
+    background: transparent;
+    /* Fully transparent */
+    border: none;
+    padding: 4px 0;
+    width: 250px;
+    /* Widened slightly for longer bars */
+    margin-top: 2px;
+    /* Pulls capsule down to leave a clean 5px gap below dials */
+    align-self: center;
+    /* Centered relative to dashboard container */
+    z-index: 10;
+    /* Ensures it renders clearly on top */
 }
 
-
+.bottom-status-capsule .linear-gauge-container {
+    flex: 1;
+    /* Split width 50/50 */
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
 
 .linear-icon {
     display: flex;
     align-items: center;
     justify-content: center;
     width: 14px;
-    /* Scaled up from 10px */
     height: 14px;
     flex-shrink: 0;
 }
@@ -409,18 +253,10 @@ body {
     /* Thicker for text overlay and high visibility */
     background: rgba(0, 0, 0, 0.35);
     /* Subtle dark container inside outline */
-    border-radius: 6px; /* Increased to 6px for rounder corners */
+    border-radius: 6px;
     overflow: hidden;
     border: 1px solid rgba(255, 255, 255, 0.35);
     /* Distinct outline box */
-}
-
-.linear-label {
-    font-family: 'Formula1', sans-serif;
-    font-size: 7px;
-    color: rgba(255, 255, 255, 0.4);
-    font-weight: bold;
-    min-width: 26px;
 }
 
 .progress-fill {
@@ -455,52 +291,7 @@ body {
     pointer-events: none;
 }
 
-
-
-
-/* === PIT WARNING OVERLAY === */
-#pit-speed-warning {
-    display: none;
-    position: fixed;
-    top: 30%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: rgba(231, 76, 60, 0.9);
-    border: 2px solid #fff;
-    border-radius: 12px;
-    padding: 15px 30px;
-    text-align: center;
-    color: white;
-    z-index: 1000;
-    font-family: 'Formula1', sans-serif;
-    animation: flash-warning 0.5s infinite alternate;
-}
-
-.warning-title {
-    font-size: 20px;
-    font-weight: 900;
-    letter-spacing: 1px;
-}
-
-.warning-subtitle {
-    font-size: 12px;
-    font-weight: 700;
-    margin-top: 5px;
-    letter-spacing: 0.5px;
-    opacity: 0.9;
-}
-
-@keyframes flash-warning {
-    0% {
-        opacity: 0.8;
-    }
-
-    100% {
-        opacity: 1;
-        transform: translate(-50%, -50%) scale(1.05);
-    }
-}
-
+/* === HUD CONTROLS (Scale/Reset Buttons) === */
 .speedo-controls {
     position: absolute;
     top: -45px;

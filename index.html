@@ -5,21 +5,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>JGVRP / RageMP Speedometer CEF Overlay</title>
-    
-    <!-- External Fonts (CDN) -->
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
-    
+
     <!-- Clean CEF Stylesheet -->
     <link rel="stylesheet" href="cef.css">
 </head>
 
 <body>
-    <!-- PIT SPEED WARNING (Toggled by setPitMode / setSpeed logic) -->
-    <div id="pit-speed-warning">
-        <div class="warning-title">🔴 SLOW DOWN!</div>
-        <div class="warning-subtitle">PIT LANE SPEED LIMIT EXCEEDED (20 MPH)</div>
-    </div>
-
     <!-- SPEEDOMETER HUD -->
     <div id="speedometer" class="speedo-dashboard">
         <!-- Floating HUD Controls (Fade in on hover) -->
@@ -29,68 +20,14 @@
             <button id="btn-scale-up" class="control-btn" title="Scale Up">+</button>
         </div>
 
-        <!-- 2. Main Dials Panel -->
+        <!-- Main Dials Panel -->
         <div class="speedo-panel dials-panel">
-            <!-- Overlapping Dials Row -->
+            <!-- Dials Area -->
             <div class="speedo-dials-container">
-                
-                <!-- Speedometer Static Background SVG -->
-                <svg class="speedo-svg speedo-speed speedo-bg-layer" viewBox="0 0 300 240">
-                    <!-- Dial Background -->
-                    <circle cx="150" cy="150" r="120" class="dial-bg" />
-                    
-                    <!-- Highlights (Speed zones) -->
-                    <!-- Green (0-60 MPH) -->
-                    <path d="M 46.6 187.6 A 110 110 0 0 1 169.1 41.7" class="zone-arc zone-green" />
-                    <!-- Yellow (60-80 MPH) -->
-                    <path d="M 169.1 41.7 A 110 110 0 0 1 234.3 79.3" class="zone-arc zone-yellow" />
-                    <!-- Red (80-110 MPH) -->
-                    <path d="M 234.3 79.3 A 110 110 0 0 1 253.4 187.6" class="zone-arc zone-red" />
-                    
-                    <!-- Ticks & Numbers (0-200 MPH) -->
-                    <!-- 0 MPH -->
-                    <line x1="150" y1="30" x2="150" y2="42" transform="rotate(-110, 150, 150)" class="tick" />
-                    <text x="64" y="181" class="dial-label">0</text>
-                    <!-- 20 MPH -->
-                    <line x1="150" y1="30" x2="150" y2="40" transform="rotate(-88, 150, 150)" class="tick-sub" />
-                    <text x="58" y="147" class="dial-label">20</text>
-                    <!-- 40 MPH -->
-                    <line x1="150" y1="30" x2="150" y2="42" transform="rotate(-66, 150, 150)" class="tick" />
-                    <text x="66" y="113" class="dial-label">40</text>
-                    <!-- 60 MPH -->
-                    <line x1="150" y1="30" x2="150" y2="40" transform="rotate(-44, 150, 150)" class="tick-sub" />
-                    <text x="86" y="84" class="dial-label">60</text>
-                    <!-- 80 MPH -->
-                    <line x1="150" y1="30" x2="150" y2="42" transform="rotate(-22, 150, 150)" class="tick" />
-                    <text x="116" y="65" class="dial-label">80</text>
-                    <!-- 100 MPH -->
-                    <line x1="150" y1="30" x2="150" y2="40" transform="rotate(0, 150, 150)" class="tick-sub" />
-                    <text x="150" y="58" class="dial-label">100</text>
-                    <!-- 120 MPH -->
-                    <line x1="150" y1="30" x2="150" y2="42" transform="rotate(22, 150, 150)" class="tick" />
-                    <text x="184" y="65" class="dial-label">120</text>
-                    <!-- 140 MPH -->
-                    <line x1="150" y1="30" x2="150" y2="40" transform="rotate(44, 150, 150)" class="tick-sub" />
-                    <text x="214" y="84" class="dial-label">140</text>
-                    <!-- 160 MPH -->
-                    <line x1="150" y1="30" x2="150" y2="42" transform="rotate(66, 150, 150)" class="tick" />
-                    <text x="234" y="113" class="dial-label">160</text>
-                    <!-- 180 MPH -->
-                    <line x1="150" y1="30" x2="150" y2="40" transform="rotate(88, 150, 150)" class="tick-sub" />
-                    <text x="242" y="147" class="dial-label">180</text>
-                    <!-- 200 MPH -->
-                    <line x1="150" y1="30" x2="150" y2="42" transform="rotate(110, 150, 150)" class="tick" />
-                    <text x="236" y="181" class="dial-label">200</text>
-                </svg>
-                
-                <!-- Speedometer Dynamic Needle SVG -->
-                <svg class="speedo-svg speedo-speed speedo-needle-layer" viewBox="0 0 300 240">
-                    <!-- Needle -->
-                    <line x1="150" y1="150" x2="150" y2="45" id="speedo-needle" class="dial-needle" />
-                    <circle cx="150" cy="150" r="10" class="dial-cap-outer" />
-                    <circle cx="150" cy="150" r="5" class="dial-cap-inner" />
-                </svg>
-                
+
+                <!-- Single Canvas replaces all SVG dials -->
+                <canvas id="speedo-canvas" width="310" height="180"></canvas>
+
                 <!-- Overlay Gear Text & Speed Text -->
                 <div class="gear-overlay-container">
                     <div id="gear-display" class="gear-overlay">N</div>
@@ -101,63 +38,6 @@
                     <span id="odometer" class="odometer-inline">0.0 mi</span>
                 </div>
 
-                <!-- RPM Static Background SVG -->
-                <svg class="speedo-svg speedo-rpm speedo-bg-layer" viewBox="0 0 200 200">
-                    <circle cx="100" cy="100" r="80" class="dial-bg" />
-                    
-                    <!-- Highlights (Redline zone 9-11 RPM) -->
-                    <path d="M 165.8 76.1 A 70 70 0 0 1 165.8 123.9" class="zone-arc zone-red" />
-                    
-                    <!-- Ticks & Numbers (0-11 x1000 RPM) -->
-                    <!-- 0 RPM -->
-                    <line x1="100" y1="20" x2="100" y2="28" transform="rotate(-110, 100, 100)" class="tick" />
-                    <text x="44" y="125" class="dial-label-rpm label-left">0</text>
-                    <!-- 1 -->
-                    <line x1="100" y1="20" x2="100" y2="28" transform="rotate(-90, 100, 100)" class="tick" />
-                    <text x="40" y="104" class="dial-label-rpm label-left">1</text>
-                    <!-- 2 -->
-                    <line x1="100" y1="20" x2="100" y2="28" transform="rotate(-70, 100, 100)" class="tick" />
-                    <text x="44" y="83" class="dial-label-rpm label-left">2</text>
-                    <!-- 3 -->
-                    <line x1="100" y1="20" x2="100" y2="28" transform="rotate(-50, 100, 100)" class="tick" />
-                    <text x="54" y="65" class="dial-label-rpm">3</text>
-                    <!-- 4 -->
-                    <line x1="100" y1="20" x2="100" y2="28" transform="rotate(-30, 100, 100)" class="tick" />
-                    <text x="70" y="52" class="dial-label-rpm">4</text>
-                    <!-- 5 -->
-                    <line x1="100" y1="20" x2="100" y2="28" transform="rotate(-10, 100, 100)" class="tick" />
-                    <text x="90" y="45" class="dial-label-rpm">5</text>
-                    <!-- 6 -->
-                    <line x1="100" y1="20" x2="100" y2="28" transform="rotate(10, 100, 100)" class="tick" />
-                    <text x="110" y="45" class="dial-label-rpm">6</text>
-                    <!-- 7 -->
-                    <line x1="100" y1="20" x2="100" y2="28" transform="rotate(30, 100, 100)" class="tick" />
-                    <text x="130" y="52" class="dial-label-rpm redline-label">7</text>
-                    <!-- 8 -->
-                    <line x1="100" y1="20" x2="100" y2="28" transform="rotate(50, 100, 100)" class="tick" />
-                    <text x="146" y="65" class="dial-label-rpm redline-label">8</text>
-                    <!-- 9 -->
-                    <line x1="100" y1="20" x2="100" y2="28" transform="rotate(70, 100, 100)" class="tick" />
-                    <text x="156" y="83" class="dial-label-rpm redline-label">9</text>
-                    <!-- 10 -->
-                    <line x1="100" y1="20" x2="100" y2="28" transform="rotate(90, 100, 100)" class="tick" />
-                    <text x="160" y="104" class="dial-label-rpm redline-label">10</text>
-                    <!-- 11 -->
-                    <line x1="100" y1="20" x2="100" y2="28" transform="rotate(110, 100, 100)" class="tick" />
-                    <text x="156" y="125" class="dial-label-rpm redline-label">11</text>
-                    
-                    <text x="100" y="145" class="rpm-unit">RPM</text>
-                    <text x="100" y="157" class="rpm-multiplier">x1000</text>
-                </svg>
-                
-                <!-- RPM Dynamic Needle SVG -->
-                <svg class="speedo-svg speedo-rpm speedo-needle-layer" viewBox="0 0 200 200">
-                    <!-- Needle -->
-                    <line x1="100" y1="100" x2="100" y2="25" id="rpm-needle" class="dial-needle needle-rpm" />
-                    <circle cx="100" cy="100" r="10" class="dial-cap-outer" />
-                    <circle cx="100" cy="100" r="5" class="dial-cap-inner" />
-                </svg>
-
                 <!-- Status Indicators -->
                 <div class="speedo-indicators">
                     <!-- Left turn signal SVG -->
@@ -166,7 +46,7 @@
                             <polygon points="316.508,153.598 316.508,18.616 0,256 316.508,493.384 316.508,358.402 512,358.402 512,153.598"/>
                         </svg>
                     </div>
-                    
+
                     <!-- Headlights status SVG -->
                     <div id="indicator-headlights" class="indicator-unit indicator-headlight">
                         <svg viewBox="0 0 256 256" width="100%" height="100%">
@@ -180,7 +60,7 @@
                             <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
                         </svg>
                     </div>
-                    
+
                     <!-- Engine status SVG -->
                     <div id="indicator-engine" class="indicator-unit indicator-engine">
                         <svg viewBox="0 0 32 32" width="100%" height="100%">

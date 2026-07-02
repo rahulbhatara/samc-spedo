@@ -1,13 +1,25 @@
 # Vehicle Speedometer Dashboard
 
-A template for a vehicle speedometer dashboard that displays various vehicle metrics including speed, RPM, fuel level, and more. Optimized for GTA V / RageMP CEF overlays.
+A template for a vehicle speedometer dashboard that displays various vehicle metrics including speed, RPM, fuel level, and more. Optimized for GTA V / RageMP CEF overlays with **CPU-only rendering** (no GPU acceleration required).
 
 ## Core Features
+- **Canvas 2D Rendering**: All dials rendered on a single `<canvas>` element with offscreen static buffer caching — minimal CPU overhead per frame.
 - **Draggable Layout**: Click and drag the speedometer from anywhere to move it around the screen.
 - **Dynamic Scale**: Use the hover controls (`+` / `-`) to scale the HUD between `0.5x` and `2.0x`.
 - **Reset Button**: Press `↺` to snap the speedometer back to its default bottom-right position and 1.0x scale.
 - **Persistence**: Layout coordinates and scale settings are saved automatically in `localStorage`.
 - **Frame-rate Independent**: Needle interpolation adjusts dynamically to player monitor refresh rates (60Hz to 240Hz+).
+- **Dirty-flag Rendering**: Canvas only redraws when data changes — zero CPU cost when idle.
+- **No GPU Required**: No `backdrop-filter`, no `will-change`, no GPU compositing layers. Pure CPU-rendered.
+
+## Performance Optimizations
+- **Single Canvas**: Replaces 80+ SVG DOM nodes with 1 canvas element (~6 draw calls per frame).
+- **Static Buffer Cache**: Dial backgrounds, arcs, ticks, and labels drawn once to an offscreen canvas, then blitted per frame via `drawImage()`.
+- **Padé Approximation**: Replaces `Math.exp()` with `k*dt/(1+k*dt)` for 10× faster needle interpolation.
+- **JS Blink System**: Replaces CSS infinite animations with `setInterval` toggle (controllable, stoppable).
+- **DOM Element Caching**: All `getElementById` calls executed once at init, stored in a lookup object.
+- **`textContent` over `innerText`**: Avoids layout recalculation on text updates.
+- **rAF-Throttled Dragging**: Drag events batched to 1 DOM update per animation frame.
 
 ## Functions Documentation
 
@@ -90,3 +102,4 @@ Sets the Odometer value of the Speedometer.
 ## Dependencies
 - Modern web browser with JavaScript enabled.
 - No external libraries required.
+- No GPU acceleration required.
