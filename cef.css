@@ -1,24 +1,17 @@
-/* =========================================================================
-   DRIVER HUD — Clean Speedometer CEF Overlay CSS
-   Optimized for CPU-only rendering (no GPU, no backdrop-filter).
-   All dial rendering moved to Canvas 2D — SVG rules removed.
-   ========================================================================= */
-
 @font-face {
     font-family: 'Formula1';
-    src: url('Formula1-Regular_web_0.ttf') format('truetype');
+    src: url('https://cdn.jsdelivr.net/gh/rahulbhatara/samcjgv-tools@main/assets/Formula1-Regular_web_0.ttf') format('truetype');
     font-weight: 400;
     font-style: normal;
 }
 
 @font-face {
     font-family: 'Formula1';
-    src: url('Formula1-Bold_web_0.ttf') format('truetype');
+    src: url('https://cdn.jsdelivr.net/gh/rahulbhatara/samcjgv-tools@main/assets/Formula1-Bold_web_0.ttf') format('truetype');
     font-weight: 700;
     font-style: normal;
 }
 
-/* === CEF RESET & OVERLAY BACKGROUND === */
 * {
     margin: 0;
     padding: 0;
@@ -27,23 +20,18 @@
 
 body {
     background: transparent !important;
-    /* Critical for game overlay rendering */
-    color: #fff;
+    color: #ffffff;
     font-family: 'Formula1', sans-serif;
     min-height: 100vh;
     width: 100vw;
     overflow: hidden;
     position: relative;
     user-select: none;
-    /* Prevents text selection inside the game */
     -webkit-font-smoothing: antialiased;
-    /* Sharper fonts in Chromium/CEF */
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeSpeed;
-    /* Faster text rendering on CPU-only */
 }
 
-/* === MAIN DASHBOARD CONTAINER (Fixed to Bottom Right Corner) === */
 .speedo-dashboard {
     position: fixed;
     bottom: 15px;
@@ -52,19 +40,16 @@ body {
     align-items: stretch;
     gap: 8px;
     background: transparent;
-    /* Fully transparent panel container */
     padding: 8px;
     z-index: 100;
 }
 
-/* === PANEL LAYOUTS === */
 .speedo-panel {
     display: flex;
     flex-direction: column;
     justify-content: center;
 }
 
-/* Center panel: Dials & Indicators */
 .dials-panel {
     align-items: center;
     position: relative;
@@ -75,21 +60,18 @@ body {
     height: 180px;
     width: 310px;
     margin-top: -15px;
-    /* Pulls the dials closer to the top border */
 }
 
-/* === CANVAS (replaces all SVG dials) === */
 #speedo-canvas {
     position: absolute;
     left: 0;
     top: 0;
 }
 
-/* Gear & Speed Digital overlay centered in the Speed dial */
 .gear-overlay-container {
     position: absolute;
     left: 110px;
-    top: 128px;
+    top: 90px;
     transform: translate(-50%, -50%);
     z-index: 3;
     pointer-events: none;
@@ -114,7 +96,6 @@ body {
     color: #ff6b35;
     line-height: 1;
     text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
-    /* Drop shadow for high-contrast on transparent BG */
 }
 
 #speed-display {
@@ -136,7 +117,6 @@ body {
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85);
 }
 
-/* Odometer inline below MPH */
 .odometer-inline {
     font-family: 'Formula1', sans-serif;
     font-size: 7px;
@@ -146,7 +126,6 @@ body {
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85);
 }
 
-/* === STATUS INDICATORS === */
 .speedo-indicators {
     position: absolute;
     left: 75%;
@@ -157,7 +136,6 @@ body {
     gap: 5px;
     align-items: center;
     background: rgba(10, 10, 10, 0.6);
-    /* Matching capsule style */
     border: 1px solid rgba(255, 255, 255, 0.06);
     padding: 3px 8px;
     border-radius: 20px;
@@ -176,26 +154,21 @@ body {
     fill: rgba(255, 255, 255, 0.15);
 }
 
-/* Turn Indicator active state (blink handled by JS) */
 .indicator-arrow.on svg {
     fill: #2ecc71;
 }
 
-/* Headlights styling */
 .indicator-headlight.on svg {
     fill: #3498db;
 }
 
-/* Seatbelt warning styling (blink handled by JS) */
 .indicator-seatbelt.on svg {
     fill: #e74c3c;
 }
 
-/* Engine indicator styling */
 .indicator-engine svg {
     fill: none;
     stroke: #e74c3c;
-    /* Default: red (engine off warning) */
     stroke-width: 2;
     stroke-linecap: round;
     stroke-linejoin: round;
@@ -203,30 +176,21 @@ body {
 
 .indicator-engine.on svg {
     stroke: #2ecc71;
-    /* Engine running: green */
 }
 
-/* === BOTTOM STATUS CAPSULE (HP & Fuel) === */
 .bottom-status-capsule {
     display: flex;
     gap: 16px;
     background: transparent;
-    /* Fully transparent */
-    border: none;
     padding: 4px 0;
     width: 250px;
-    /* Widened slightly for longer bars */
     margin-top: 2px;
-    /* Pulls capsule down to leave a clean 5px gap below dials */
     align-self: center;
-    /* Centered relative to dashboard container */
     z-index: 10;
-    /* Ensures it renders clearly on top */
 }
 
 .bottom-status-capsule .linear-gauge-container {
     flex: 1;
-    /* Split width 50/50 */
     display: flex;
     align-items: center;
     gap: 5px;
@@ -249,19 +213,14 @@ body {
 
 .linear-progress-bar {
     position: relative;
-    /* Context for absolute text positioning */
     flex: 1;
     height: 16px;
-    /* Thicker for text overlay and high visibility */
     background: rgba(0, 0, 0, 0.35);
-    /* Subtle dark container inside outline */
     border-radius: 6px;
     overflow: hidden;
     border: 1px solid rgba(255, 255, 255, 0.35);
-    /* Distinct outline box */
 }
 
-/* 1. Ini mengatur animasi & ukuran bar dasar (berlaku untuk HP & Fuel) */
 .progress-fill {
     height: 100%;
     width: 100%;
@@ -273,7 +232,6 @@ body {
     transition: transform 0.3s ease;
 }
 
-/* 2. Ini mengatur sifat bayangan/pembalik ukuran dari background-nya */
 .progress-fill::before {
     content: '';
     position: absolute;
@@ -286,13 +244,11 @@ body {
     transition: transform 0.3s ease;
 }
 
-/* 3. Ini memberikan warna khusus untuk Health */
 .health-bar-fill::before {
     background: linear-gradient(90deg, #e74c3c 0%, #f1c40f 50%, #2ecc71 100%);
     background-position: left center;
 }
 
-/* 4. Ini memberikan warna khusus untuk Fuel */
 .fuel-bar-fill::before {
     background: linear-gradient(90deg, #e74c3c 0%, #f1c40f 50%, #2ecc71 100%);
     background-position: left center;
@@ -312,11 +268,9 @@ body {
     font-weight: 700;
     color: #ffffff;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
-    /* Drop shadow for high contrast over fills */
     pointer-events: none;
 }
 
-/* === HUD CONTROLS (Scale/Reset Buttons) === */
 .speedo-controls {
     position: absolute;
     top: -45px;
@@ -332,20 +286,16 @@ body {
     z-index: 9999;
 }
 
-/* Transparent bridge to prevent losing hover when moving mouse between speedometer and control buttons */
 .speedo-controls::before {
     content: '';
     position: absolute;
     top: -10px;
     left: -20px;
-    /* Extends horizontal target area slightly */
     right: -20px;
     bottom: -25px;
-    /* Extends downward to span the gap to the dials */
     z-index: -1;
 }
 
-/* Hovering either the speedometer or the controls themselves keeps the menu active */
 .speedo-dashboard:hover .speedo-controls,
 .speedo-controls:hover {
     opacity: 1;
@@ -373,7 +323,6 @@ body {
 .control-btn:hover {
     background: rgba(255, 255, 255, 0.2);
     color: #3498db;
-    /* Sleek blue accent on hover */
 }
 
 .control-btn:active {
@@ -386,7 +335,6 @@ body {
 
 #btn-reset:hover {
     color: #e74c3c;
-    /* Red accent for reset */
 }
 
 .speedo-dashboard:active {
