@@ -14,6 +14,10 @@ const SPEED_DECAY = 7.5;
 const RPM_DECAY = 7.5;
 const LERP_THRESHOLD = 0.15;   // Degrees — snap to target when close enough
 
+// Canvas base dimensions (logical pixels — all drawing uses these coords)
+const BASE_CANVAS_W = 310;
+const BASE_CANVAS_H = 180;
+
 // ---------- Speed Dial Geometry (canvas pixels) ----------
 // SVG viewBox 300×240 → element 220×180, scale=0.7333, y-offset=2px
 const S_CX = 110, S_CY = 112;         // Dial center
@@ -150,7 +154,7 @@ function drawLabels(ctx, cx, cy, labelR, labels, font, defaultColor) {
 /** Build static offscreen buffer (called once after fonts load) */
 function drawStaticBuffer() {
     const ctx = bgCtx;
-    ctx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
+    ctx.clearRect(0, 0, BASE_CANVAS_W, BASE_CANVAS_H);
 
     // ---- Speed Dial ----
     drawDialBg(ctx, S_CX, S_CY, S_MAIN_R);
@@ -259,10 +263,10 @@ function renderFrame() {
     if (!renderDirty || !bgCanvas) return;
     renderDirty = false;
 
-    mainCtx.clearRect(0, 0, mainCanvas.width, mainCanvas.height);
+    mainCtx.clearRect(0, 0, BASE_CANVAS_W, BASE_CANVAS_H);
 
     // 1. Blit cached static background (instant — single drawImage call)
-    mainCtx.drawImage(bgCanvas, 0, 0);
+    mainCtx.drawImage(bgCanvas, 0, 0, BASE_CANVAS_W, BASE_CANVAS_H);
 
     // 2. Draw speed needle
     drawNeedle(mainCtx, S_CX, S_CY, displaySpeedAngle, S_NEEDLE_LEN, S_NEEDLE_W, S_CAP_OUTER, S_CAP_INNER);
@@ -404,7 +408,13 @@ function setRPM(rpm) {
  */
 function setFuel(fuel) {
     currentFuel = fuel;
-    if (EL.fuelFill) EL.fuelFill.style.width = (fuel * 100) + '%';
+    if (EL.fuelFill) {
+        var pct = fuel * 100;
+        EL.fuelFill.style.width = pct + '%';
+        // Scale gradient so it always spans the full parent width.
+        // At 50% width → backgroundSize = 200%, showing only left half of gradient.
+        EL.fuelFill.style.backgroundSize = (fuel > 0.01 ? (100 / fuel) : 10000) + '% 100%';
+    }
     if (EL.fuelText) EL.fuelText.textContent  = Math.round(fuel * 100) + '%';
 }
 
@@ -414,7 +424,12 @@ function setFuel(fuel) {
  */
 function setHealth(health) {
     currentHealth = health;
-    if (EL.healthFill) EL.healthFill.style.width = (health * 100) + '%';
+    if (EL.healthFill) {
+        var pct = health * 100;
+        EL.healthFill.style.width = pct + '%';
+        // Scale gradient so it always spans the full parent width.
+        EL.healthFill.style.backgroundSize = (health > 0.01 ? (100 / health) : 10000) + '% 100%';
+    }
     if (EL.healthText) EL.healthText.textContent  = Math.round(health * 100) + '%';
 }
 
@@ -546,6 +561,7 @@ function updateScale() {
     if (!dashboardEl) return;
     dashboardEl.style.transform = 'scale(' + currentScale + ')';
     dashboardEl.style.transformOrigin = 'center center';
+    resizeCanvasForScale();
 }
 
 function resetSettings() {
@@ -559,6 +575,36 @@ function resetSettings() {
         dashboardEl.style.transformOrigin = '';
     }
     localStorage.removeItem('spedo_settings');
+    resizeCanvasForScale();
+}
+
+/**
+ * Resize canvas internal resolution to match current scale + devicePixelRatio.
+ * Drawing code uses the same logical coordinates (BASE_CANVAS_W × BASE_CANVAS_H)
+ * but the canvas has enough actual pixels to stay sharp at any zoom level.
+ */
+function resizeCanvasForScale() {
+    if (!mainCanvas || !bgCanvas) return;
+    var dpr = window.devicePixelRatio || 1;
+    var totalScale = currentScale * dpr;
+
+    // Resize resets all canvas state (content + transforms)
+    mainCanvas.width  = Math.round(BASE_CANVAS_W * totalScale);
+    mainCanvas.height = Math.round(BASE_CANVAS_H * totalScale);
+    mainCanvas.style.width  = BASE_CANVAS_W + 'px';
+    mainCanvas.style.height = BASE_CANVAS_H + 'px';
+
+    bgCanvas.width  = Math.round(BASE_CANVAS_W * totalScale);
+    bgCanvas.height = Math.round(BASE_CANVAS_H * totalScale);
+
+    // Re-apply scale (was reset by resize)
+    mainCtx.scale(totalScale, totalScale);
+    bgCtx.scale(totalScale, totalScale);
+
+    // Redraw at new resolution
+    drawStaticBuffer();
+    renderDirty = true;
+    renderFrame();
 }
 
 // =========================================================================
@@ -676,13 +722,11 @@ document.addEventListener('DOMContentLoaded', function () {
     mainCtx    = mainCanvas.getContext('2d');
 
     bgCanvas        = document.createElement('canvas');
-    bgCanvas.width  = mainCanvas.width;
-    bgCanvas.height = mainCanvas.height;
     bgCtx           = bgCanvas.getContext('2d');
 
-    // 3. Wait for fonts → draw static buffer → initial render
+    // 3. Wait for fonts → resize canvas for current scale → initial render
     document.fonts.ready.then(function () {
-        drawStaticBuffer();
+        resizeCanvasForScale();
 
         // Set baseline defaults
         setEngine(false);

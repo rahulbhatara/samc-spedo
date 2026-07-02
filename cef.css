@@ -263,14 +263,17 @@ body {
     height: 100%;
     width: 100%;
     border-radius: 0; /* Let parent overflow:hidden handle corner rounding */
+    transition: width 0.3s ease;
 }
 
 .health-bar-fill {
-    background: linear-gradient(90deg, #e74c3c, #2ecc71);
+    background: linear-gradient(90deg, #e74c3c 0%, #f1c40f 50%, #2ecc71 100%);
+    background-position: left center;
 }
 
 .fuel-bar-fill {
-    background: linear-gradient(90deg, #e74c3c, #f1c40f, #2ecc71);
+    background: linear-gradient(90deg, #e74c3c 0%, #f1c40f 50%, #2ecc71 100%);
+    background-position: left center;
 }
 
 .linear-value {
