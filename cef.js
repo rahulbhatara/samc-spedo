@@ -312,12 +312,12 @@ function setSpeed(speed) {
 function setRPM(rpm) {
     currentRpm = rpm;
 
-    const rpmVal = rpm * 11;
+    const rpmVal = rpm * 10;
+
     const angle = rpmVal * 20 - 110;
     targetRpmAngle = Math.min(Math.max(angle, -110), 110);
     startAnimation();
 }
-
 function setFuel(fuel) {
 
     if (currentFuel === fuel) return;
@@ -590,13 +590,13 @@ document.addEventListener('DOMContentLoaded', function () {
         setEngine(false);
         setSpeed(0);
         setRPM(0);
-        setFuel(1.0);
-        setHealth(1.0);
+        setFuel(1);
+        setHealth(1);
         setGear(0);
         setHeadlights(0);
         setLeftIndicator(false);
         setRightIndicator(false);
-        setSeatbelts(true);
+        setSeatbelts(0);
         setOdometer(0);
     });
 

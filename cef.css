@@ -162,20 +162,30 @@ body {
     fill: #3498db;
 }
 
-.indicator-seatbelt.on svg {
-    fill: #e74c3c;
+.indicator-seatbelt .seatbelt-icon {
+    width: 14px;
+    height: 14px;
+    background-color: #2ecc71;
+    -webkit-mask: url('https://cdn.jsdelivr.net/gh/rahulbhatara/samcjgv-tools@main/assets/seatbelt.svg') no-repeat center / contain;
+    mask: url('https://cdn.jsdelivr.net/gh/rahulbhatara/samcjgv-tools@main/assets/seatbelt.svg') no-repeat center / contain;
+    transition: background-color 0.2s ease;
 }
 
-.indicator-engine svg {
-    fill: none;
-    stroke: #e74c3c;
-    stroke-width: 2;
-    stroke-linecap: round;
-    stroke-linejoin: round;
+.indicator-seatbelt.on .seatbelt-icon {
+    background-color: #e74c3c;
 }
 
-.indicator-engine.on svg {
-    stroke: #2ecc71;
+.indicator-engine .engine-icon {
+    width: 14px;
+    height: 14px;
+    background-color: #e74c3c;
+    -webkit-mask: url('https://cdn.jsdelivr.net/gh/rahulbhatara/samcjgv-tools@main/assets/engine.svg') no-repeat center / contain;
+    mask: url('https://cdn.jsdelivr.net/gh/rahulbhatara/samcjgv-tools@main/assets/engine.svg') no-repeat center / contain;
+    transition: background-color 0.2s ease;
+}
+
+.indicator-engine.on .engine-icon {
+    background-color: #2ecc71;
 }
 
 .bottom-status-capsule {
