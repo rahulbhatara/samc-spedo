@@ -194,14 +194,16 @@ body {
 /* Engine indicator styling */
 .indicator-engine svg {
     fill: none;
-    stroke: #e74c3c; /* Default: red (engine off warning) */
+    stroke: #e74c3c;
+    /* Default: red (engine off warning) */
     stroke-width: 2;
     stroke-linecap: round;
     stroke-linejoin: round;
 }
 
 .indicator-engine.on svg {
-    stroke: #2ecc71; /* Engine running: green */
+    stroke: #2ecc71;
+    /* Engine running: green */
 }
 
 /* === BOTTOM STATUS CAPSULE (HP & Fuel) === */
@@ -259,19 +261,39 @@ body {
     /* Distinct outline box */
 }
 
+/* 1. Ini mengatur animasi & ukuran bar dasar (berlaku untuk HP & Fuel) */
 .progress-fill {
     height: 100%;
     width: 100%;
-    border-radius: 0; /* Let parent overflow:hidden handle corner rounding */
-    transition: width 0.3s ease;
+    border-radius: 0;
+    position: relative;
+    overflow: hidden;
+    transform: scaleX(var(--value, 1));
+    transform-origin: left center;
+    transition: transform 0.3s ease;
 }
 
-.health-bar-fill {
+/* 2. Ini mengatur sifat bayangan/pembalik ukuran dari background-nya */
+.progress-fill::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    transform: scaleX(calc(1 / var(--value, 1)));
+    transform-origin: left center;
+    transition: transform 0.3s ease;
+}
+
+/* 3. Ini memberikan warna khusus untuk Health */
+.health-bar-fill::before {
     background: linear-gradient(90deg, #e74c3c 0%, #f1c40f 50%, #2ecc71 100%);
     background-position: left center;
 }
 
-.fuel-bar-fill {
+/* 4. Ini memberikan warna khusus untuk Fuel */
+.fuel-bar-fill::before {
     background: linear-gradient(90deg, #e74c3c 0%, #f1c40f 50%, #2ecc71 100%);
     background-position: left center;
 }
@@ -315,9 +337,11 @@ body {
     content: '';
     position: absolute;
     top: -10px;
-    left: -20px;   /* Extends horizontal target area slightly */
+    left: -20px;
+    /* Extends horizontal target area slightly */
     right: -20px;
-    bottom: -25px; /* Extends downward to span the gap to the dials */
+    bottom: -25px;
+    /* Extends downward to span the gap to the dials */
     z-index: -1;
 }
 
@@ -348,7 +372,8 @@ body {
 
 .control-btn:hover {
     background: rgba(255, 255, 255, 0.2);
-    color: #3498db; /* Sleek blue accent on hover */
+    color: #3498db;
+    /* Sleek blue accent on hover */
 }
 
 .control-btn:active {
@@ -360,7 +385,8 @@ body {
 }
 
 #btn-reset:hover {
-    color: #e74c3c; /* Red accent for reset */
+    color: #e74c3c;
+    /* Red accent for reset */
 }
 
 .speedo-dashboard:active {

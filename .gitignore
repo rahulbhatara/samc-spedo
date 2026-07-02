@@ -1,3 +1,5 @@
 .agents/
 agent/
 skills-lock.json
+setFuel_setHealth.txt
+setSpeed_setRPM.txt

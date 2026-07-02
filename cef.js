@@ -22,51 +22,51 @@ const BASE_CANVAS_H = 180;
 // SVG viewBox 300×240 → element 220×180, scale=0.7333, y-offset=2px
 const S_CX = 110, S_CY = 112;         // Dial center
 const S_MAIN_R = 88;                   // Background circle radius  (120 × 0.7333)
-const S_ARC_R  = 80.7;                 // Zone arc radius           (110 × 0.7333)
+const S_ARC_R = 80.7;                 // Zone arc radius           (110 × 0.7333)
 const S_TICK_OUTER = 88;               // Tick outer radius         (120 × 0.7333)
-const S_TICK_MAJ   = 79.2;             // Tick inner — major        (108 × 0.7333)
-const S_TICK_MIN   = 80.7;             // Tick inner — minor        (110 × 0.7333)
-const S_LABEL_R    = 67;               // Number label radius       (~91 × 0.7333)
+const S_TICK_MAJ = 79.2;             // Tick inner — major        (108 × 0.7333)
+const S_TICK_MIN = 80.7;             // Tick inner — minor        (110 × 0.7333)
+const S_LABEL_R = 67;               // Number label radius       (~91 × 0.7333)
 const S_NEEDLE_LEN = 77;               // Needle length             (105 × 0.7333)
-const S_CAP_OUTER  = 7.3;              // Cap outer circle radius   (10  × 0.7333)
-const S_CAP_INNER  = 3.7;              // Cap inner circle radius   (5   × 0.7333)
-const S_NEEDLE_W   = 2.57;             // Needle stroke width       (3.5 × 0.7333)
+const S_CAP_OUTER = 7.3;              // Cap outer circle radius   (10  × 0.7333)
+const S_CAP_INNER = 3.7;              // Cap inner circle radius   (5   × 0.7333)
+const S_NEEDLE_W = 2.57;             // Needle stroke width       (3.5 × 0.7333)
 
 // ---------- RPM Dial Geometry (canvas pixels) ----------
 // SVG viewBox 200×200 → element 150×150, scale=0.75, positioned at (160, 15) in container
 const R_CX = 235, R_CY = 90;          // Dial center
 const R_MAIN_R = 60;                   // Background circle radius  (80 × 0.75)
-const R_ARC_R  = 52.5;                 // Zone arc radius           (70 × 0.75)
+const R_ARC_R = 52.5;                 // Zone arc radius           (70 × 0.75)
 const R_TICK_OUTER = 60;               // Tick outer radius         (80 × 0.75)
 const R_TICK_INNER = 54;               // Tick inner radius         (72 × 0.75)
-const R_LABEL_R    = 46;               // Number label radius       (~61 × 0.75)
+const R_LABEL_R = 46;               // Number label radius       (~61 × 0.75)
 const R_NEEDLE_LEN = 56;               // Needle length             (75 × 0.75)
-const R_CAP_OUTER  = 7.5;              // Cap outer circle radius   (10 × 0.75)
-const R_CAP_INNER  = 3.75;             // Cap inner circle radius   (5  × 0.75)
-const R_NEEDLE_W   = 2.1;              // Needle stroke width       (2.8 × 0.75)
-const R_UNIT_Y     = 123.75;           // "RPM" text Y              (15 + 145 × 0.75)
-const R_MULT_Y     = 132.75;           // "x1000" text Y            (15 + 157 × 0.75)
+const R_CAP_OUTER = 7.5;              // Cap outer circle radius   (10 × 0.75)
+const R_CAP_INNER = 3.75;             // Cap inner circle radius   (5  × 0.75)
+const R_NEEDLE_W = 2.1;              // Needle stroke width       (2.8 × 0.75)
+const R_UNIT_Y = 123.75;           // "RPM" text Y              (15 + 145 × 0.75)
+const R_MULT_Y = 132.75;           // "x1000" text Y            (15 + 157 × 0.75)
 
 // === STATE ===
-let currentSpeed   = 0;       // In m/s
-let currentRpm     = 0;       // Float 0.0 – 1.0
-let currentFuel    = 1.0;     // Float 0.0 – 1.0
-let currentHealth  = 1.0;     // Float 0.0 – 1.0
-let currentGear    = 0;       // Integer (0=N, −1=R, 1..7)
+let currentSpeed = 0;       // In m/s
+let currentRpm = 0;       // Float 0.0 – 1.0
+let currentFuel = 1.0;     // Float 0.0 – 1.0
+let currentHealth = 1.0;     // Float 0.0 – 1.0
+let currentGear = 0;       // Integer (0=N, −1=R, 1..7)
 let currentOdometer = 0;      // In miles
-let currentEngine  = false;
+let currentEngine = false;
 let currentHeadlights = 0;    // 0=Off, 1=On, 2=High
-let leftIndicator  = false;
+let leftIndicator = false;
 let rightIndicator = false;
 let seatbeltFastened = false;
 
 // Animation state
-let targetSpeedAngle  = -110;
+let targetSpeedAngle = -110;
 let displaySpeedAngle = -110;
-let targetRpmAngle    = -110;
-let displayRpmAngle   = -110;
+let targetRpmAngle = -110;
+let displayRpmAngle = -110;
 let animRunning = false;
-let lastFrame   = 0;
+let lastFrame = 0;
 let renderDirty = true;
 
 // === CACHED DOM ELEMENTS ===
@@ -161,9 +161,9 @@ function drawStaticBuffer() {
 
     // Zone arcs (green / yellow / red)
     drawZoneArcs(ctx, S_CX, S_CY, S_ARC_R, [
-        { start: -110, end: 10,  color: '#2ecc71', alpha: 0.6 },  // 0–109 MPH
-        { start:   10, end: 50,  color: '#f1c40f', alpha: 0.6 },  // 109–145 MPH
-        { start:   50, end: 110, color: '#e74c3c', alpha: 0.8 },  // 145–200 MPH
+        { start: -110, end: 10, color: '#2ecc71', alpha: 0.6 },  // 0–109 MPH
+        { start: 10, end: 50, color: '#f1c40f', alpha: 0.6 },  // 109–145 MPH
+        { start: 50, end: 110, color: '#e74c3c', alpha: 0.8 },  // 145–200 MPH
     ], 2.93);
 
     // Ticks (every 20 MPH, major at 0/40/80/120/160/200)
@@ -203,7 +203,7 @@ function drawStaticBuffer() {
     for (let v = 0; v <= 11; v++) {
         rpmLabels.push({
             angle: v * 20 - 110,
-            text:  '' + v,
+            text: '' + v,
             color: v >= 7 ? '#ff4757' : undefined
         });
     }
@@ -289,7 +289,7 @@ function animateNeedles(timestamp) {
 
     // Padé approximation: k*dt / (1 + k*dt) ≈ 1 − e^(−k·dt)  — 10× faster than Math.exp()
     const sFactor = SPEED_DECAY * dt / (1 + SPEED_DECAY * dt);
-    const sDelta  = targetSpeedAngle - displaySpeedAngle;
+    const sDelta = targetSpeedAngle - displaySpeedAngle;
     if (Math.abs(sDelta) > LERP_THRESHOLD) {
         displaySpeedAngle += sDelta * sFactor;
         needsUpdate = true;
@@ -299,7 +299,7 @@ function animateNeedles(timestamp) {
     }
 
     const rFactor = RPM_DECAY * dt / (1 + RPM_DECAY * dt);
-    const rDelta  = targetRpmAngle - displayRpmAngle;
+    const rDelta = targetRpmAngle - displayRpmAngle;
     if (Math.abs(rDelta) > LERP_THRESHOLD) {
         displayRpmAngle += rDelta * rFactor;
         needsUpdate = true;
@@ -397,7 +397,7 @@ function setRPM(rpm) {
 
     // Set TARGET angle (0..11 ×1000 RPM → −110..110 deg)
     const rpmVal = rpm * 11;
-    const angle  = rpmVal * 20 - 110;
+    const angle = rpmVal * 20 - 110;
     targetRpmAngle = Math.min(Math.max(angle, -110), 110);
     startAnimation();
 }
@@ -407,15 +407,16 @@ function setRPM(rpm) {
  * @param {number} fuel — Float 0.0 – 1.0
  */
 function setFuel(fuel) {
+    // 1. Guard Clause: Jika nilai tidak berubah, langsung exit (Hemat CPU)
+    if (currentFuel === fuel) return;
     currentFuel = fuel;
+
     if (EL.fuelFill) {
-        var pct = fuel * 100;
-        EL.fuelFill.style.width = pct + '%';
-        // Scale gradient so it always spans the full parent width.
-        // At 50% width → backgroundSize = 200%, showing only left half of gradient.
-        EL.fuelFill.style.backgroundSize = (fuel > 0.01 ? (100 / fuel) : 10000) + '% 100%';
+        // Batasi nilai minimal ke 0.001 untuk menghindari error pembagian dengan nol di CSS calc()
+        const safeFuel = Math.max(fuel, 0.001);
+        EL.fuelFill.style.setProperty('--value', safeFuel);
     }
-    if (EL.fuelText) EL.fuelText.textContent  = Math.round(fuel * 100) + '%';
+    if (EL.fuelText) EL.fuelText.textContent = Math.round(fuel * 100) + '%';
 }
 
 /**
@@ -423,14 +424,16 @@ function setFuel(fuel) {
  * @param {number} health — Float 0.0 – 1.0
  */
 function setHealth(health) {
+    // 1. Guard Clause: Jika nilai tidak berubah, langsung exit
+    if (currentHealth === health) return;
     currentHealth = health;
+
     if (EL.healthFill) {
-        var pct = health * 100;
-        EL.healthFill.style.width = pct + '%';
-        // Scale gradient so it always spans the full parent width.
-        EL.healthFill.style.backgroundSize = (health > 0.01 ? (100 / health) : 10000) + '% 100%';
+        // Batasi nilai minimal ke 0.001 untuk menghindari error pembagian dengan nol di CSS calc()
+        const safeHealth = Math.max(health, 0.001);
+        EL.healthFill.style.setProperty('--value', safeHealth);
     }
-    if (EL.healthText) EL.healthText.textContent  = Math.round(health * 100) + '%';
+    if (EL.healthText) EL.healthText.textContent = Math.round(health * 100) + '%';
 }
 
 /**
@@ -534,10 +537,10 @@ function loadSettings() {
         if (settings) {
             currentScale = typeof settings.scale === 'number' ? settings.scale : 1.0;
             if (typeof settings.left === 'number' && typeof settings.top === 'number') {
-                dashboardEl.style.left   = settings.left + 'px';
-                dashboardEl.style.top    = settings.top + 'px';
+                dashboardEl.style.left = settings.left + 'px';
+                dashboardEl.style.top = settings.top + 'px';
                 dashboardEl.style.bottom = 'auto';
-                dashboardEl.style.right  = 'auto';
+                dashboardEl.style.right = 'auto';
             }
             updateScale();
         }
@@ -551,8 +554,8 @@ function saveSettings() {
     const style = window.getComputedStyle(dashboardEl);
     const settings = {
         scale: currentScale,
-        left:  parseFloat(style.left) || dashboardEl.offsetLeft,
-        top:   parseFloat(style.top) || dashboardEl.offsetTop
+        left: parseFloat(style.left) || dashboardEl.offsetLeft,
+        top: parseFloat(style.top) || dashboardEl.offsetTop
     };
     localStorage.setItem('spedo_settings', JSON.stringify(settings));
 }
@@ -567,10 +570,10 @@ function updateScale() {
 function resetSettings() {
     currentScale = 1.0;
     if (dashboardEl) {
-        dashboardEl.style.left   = '';
-        dashboardEl.style.top    = '';
+        dashboardEl.style.left = '';
+        dashboardEl.style.top = '';
         dashboardEl.style.bottom = '15px';
-        dashboardEl.style.right  = '15px';
+        dashboardEl.style.right = '15px';
         dashboardEl.style.transform = 'scale(1)';
         dashboardEl.style.transformOrigin = '';
     }
@@ -589,12 +592,12 @@ function resizeCanvasForScale() {
     var totalScale = currentScale * dpr;
 
     // Resize resets all canvas state (content + transforms)
-    mainCanvas.width  = Math.round(BASE_CANVAS_W * totalScale);
+    mainCanvas.width = Math.round(BASE_CANVAS_W * totalScale);
     mainCanvas.height = Math.round(BASE_CANVAS_H * totalScale);
-    mainCanvas.style.width  = BASE_CANVAS_W + 'px';
+    mainCanvas.style.width = BASE_CANVAS_W + 'px';
     mainCanvas.style.height = BASE_CANVAS_H + 'px';
 
-    bgCanvas.width  = Math.round(BASE_CANVAS_W * totalScale);
+    bgCanvas.width = Math.round(BASE_CANVAS_W * totalScale);
     bgCanvas.height = Math.round(BASE_CANVAS_H * totalScale);
 
     // Re-apply scale (was reset by resize)
@@ -617,9 +620,9 @@ function setupDragging() {
 
     let isDragging = false;
     let dragStartX = 0, dragStartY = 0;
-    let initialX   = 0, initialY   = 0;
-    let lastDragX  = 0, lastDragY  = 0;
-    let dragRAF    = null;
+    let initialX = 0, initialY = 0;
+    let lastDragX = 0, lastDragY = 0;
+    let dragRAF = null;
 
     dashboard.addEventListener('pointerdown', function (e) {
         // Exclude interactive buttons and control bar containers from starting drag
@@ -645,10 +648,10 @@ function setupDragging() {
         // Throttle DOM updates to 1 per animation frame
         if (dragRAF) return;
         dragRAF = requestAnimationFrame(function () {
-            dashboard.style.left   = (initialX + (lastDragX - dragStartX)) + 'px';
-            dashboard.style.top    = (initialY + (lastDragY - dragStartY)) + 'px';
+            dashboard.style.left = (initialX + (lastDragX - dragStartX)) + 'px';
+            dashboard.style.top = (initialY + (lastDragY - dragStartY)) + 'px';
             dashboard.style.bottom = 'auto';
-            dashboard.style.right  = 'auto';
+            dashboard.style.right = 'auto';
             dragRAF = null;
         });
     });
@@ -667,7 +670,7 @@ function setupDragging() {
 // =========================================================================
 
 function setupControls() {
-    var btnUp   = document.getElementById('btn-scale-up');
+    var btnUp = document.getElementById('btn-scale-up');
     var btnDown = document.getElementById('btn-scale-down');
     var btnReset = document.getElementById('btn-reset');
 
@@ -703,26 +706,26 @@ function setupControls() {
 
 document.addEventListener('DOMContentLoaded', function () {
     // 1. Cache all DOM elements (single lookup, no runtime getElementById)
-    EL.speedDisplay       = document.getElementById('speed-display');
-    EL.speedUnit          = document.getElementById('speed-unit');
-    EL.gearDisplay        = document.getElementById('gear-display');
-    EL.odometer           = document.getElementById('odometer');
-    EL.fuelFill           = document.getElementById('fuel-fill');
-    EL.fuelText           = document.getElementById('fuel-text');
-    EL.healthFill         = document.getElementById('health-fill');
-    EL.healthText         = document.getElementById('health-text');
-    EL.indicatorLeft      = document.getElementById('indicator-left');
-    EL.indicatorRight     = document.getElementById('indicator-right');
+    EL.speedDisplay = document.getElementById('speed-display');
+    EL.speedUnit = document.getElementById('speed-unit');
+    EL.gearDisplay = document.getElementById('gear-display');
+    EL.odometer = document.getElementById('odometer');
+    EL.fuelFill = document.getElementById('fuel-fill');
+    EL.fuelText = document.getElementById('fuel-text');
+    EL.healthFill = document.getElementById('health-fill');
+    EL.healthText = document.getElementById('health-text');
+    EL.indicatorLeft = document.getElementById('indicator-left');
+    EL.indicatorRight = document.getElementById('indicator-right');
     EL.indicatorHeadlights = document.getElementById('indicator-headlights');
-    EL.indicatorSeatbelt  = document.getElementById('indicator-seatbelt');
-    EL.indicatorEngine    = document.getElementById('indicator-engine');
+    EL.indicatorSeatbelt = document.getElementById('indicator-seatbelt');
+    EL.indicatorEngine = document.getElementById('indicator-engine');
 
     // 2. Setup Canvas
     mainCanvas = document.getElementById('speedo-canvas');
-    mainCtx    = mainCanvas.getContext('2d');
+    mainCtx = mainCanvas.getContext('2d');
 
-    bgCanvas        = document.createElement('canvas');
-    bgCtx           = bgCanvas.getContext('2d');
+    bgCanvas = document.createElement('canvas');
+    bgCtx = bgCanvas.getContext('2d');
 
     // 3. Wait for fonts → resize canvas for current scale → initial render
     document.fonts.ready.then(function () {
