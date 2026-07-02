@@ -216,8 +216,23 @@ function renderFrame() {
 
     mainCtx.drawImage(bgCanvas, 0, 0, BASE_CANVAS_W, BASE_CANVAS_H);
 
-    drawNeedle(mainCtx, S_CX, S_CY, displaySpeedAngle, S_NEEDLE_LEN, S_NEEDLE_W, S_CAP_OUTER, S_CAP_INNER);
+    mainCtx.save();
+    mainCtx.font = '900 15px Formula1, sans-serif';
+    mainCtx.fillStyle = '#ff6b35';
+    mainCtx.textAlign = 'center';
+    mainCtx.textBaseline = 'middle';
 
+    mainCtx.shadowColor = 'rgba(0, 0, 0, 0.85)';
+    mainCtx.shadowBlur = 3;
+    mainCtx.shadowOffsetX = 0;
+    mainCtx.shadowOffsetY = 1;
+
+    const display = currentGear === 0 ? 'N' : (currentGear === -1 ? 'R' : currentGear.toString());
+
+    mainCtx.fillText(display, 110, 90);
+    mainCtx.restore();
+
+    drawNeedle(mainCtx, S_CX, S_CY, displaySpeedAngle, S_NEEDLE_LEN, S_NEEDLE_W, S_CAP_OUTER, S_CAP_INNER);
     drawNeedle(mainCtx, R_CX, R_CY, displayRpmAngle, R_NEEDLE_LEN, R_NEEDLE_W, R_CAP_OUTER, R_CAP_INNER);
 }
 
@@ -346,8 +361,8 @@ function setHealth(health) {
 
 function setGear(gear) {
     currentGear = gear;
-    const display = gear === 0 ? 'N' : (gear === -1 ? 'R' : gear.toString());
-    if (EL.gearDisplay) EL.gearDisplay.textContent = display;
+    renderDirty = true;
+    renderFrame();
 }
 
 function setHeadlights(state) {
