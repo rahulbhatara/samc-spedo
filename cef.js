@@ -124,7 +124,7 @@ function drawStaticBuffer() {
     // 1. Draw unified background (fills the entire merged shape in a single call to prevent transparency overlap)
     bgCtx.beginPath();
     bgCtx.arc(S_CX, S_CY, S_MAIN_R, 0, TWO_PI);
-    
+
     const R_LEFT = R_CX - R_MAIN_R;
     bgCtx.moveTo(R_CX + R_MAIN_R, R_CY);
     bgCtx.arc(R_CX, R_CY, R_MAIN_R, Math.PI, 0, false);
@@ -133,7 +133,7 @@ function drawStaticBuffer() {
     bgCtx.lineTo(R_LEFT, R_CY);
     bgCtx.closePath();
 
-    bgCtx.fillStyle = 'rgba(10, 10, 10, 0.65)';
+    bgCtx.fillStyle = 'rgba(0, 0, 0, 1)';
     bgCtx.fill();
 
     // 2. Stroke the RPM background, clipped to the outside of the Speedometer circle so it doesn't draw inside
@@ -491,10 +491,10 @@ function setOdometer(distance) {
 function setPosition(left, top) {
     if (!dashboardEl) dashboardEl = document.getElementById('speedometer');
     if (!dashboardEl) return;
-    
+
     const leftVal = typeof left === 'number' ? left + 'px' : left;
     const topVal = typeof top === 'number' ? top + 'px' : top;
-    
+
     dashboardEl.style.left = leftVal;
     dashboardEl.style.top = topVal;
     dashboardEl.style.bottom = 'auto';
