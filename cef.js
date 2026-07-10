@@ -147,13 +147,13 @@ function drawStaticBuffer() {
     bgCtx.arc(R_CX, R_CY, R_MAIN_R, 0, TWO_PI);
 
     // Dark outer silhouette outline
-    bgCtx.strokeStyle = 'rgba(0, 0, 0, 0.4)';
-    bgCtx.lineWidth = 2.2;
+    bgCtx.strokeStyle = 'rgba(0, 0, 0, 0.75)';
+    bgCtx.lineWidth = 2.6;
     bgCtx.stroke();
 
     // Light inner outline
-    bgCtx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
-    bgCtx.lineWidth = 1.1;
+    bgCtx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
+    bgCtx.lineWidth = 1.6;
     bgCtx.stroke();
     bgCtx.restore();
 
@@ -161,15 +161,15 @@ function drawStaticBuffer() {
     bgCtx.beginPath();
     bgCtx.arc(S_CX, S_CY, S_MAIN_R, 0, TWO_PI);
     // Dark outer silhouette outline
-    bgCtx.strokeStyle = 'rgba(0, 0, 0, 0.4)';
-    bgCtx.lineWidth = 2.2;
+    bgCtx.strokeStyle = 'rgba(0, 0, 0, 0.75)';
+    bgCtx.lineWidth = 2.6;
     bgCtx.stroke();
 
     bgCtx.beginPath();
     bgCtx.arc(S_CX, S_CY, S_MAIN_R, 0, TWO_PI);
     // Light inner outline
-    bgCtx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
-    bgCtx.lineWidth = 1.1;
+    bgCtx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
+    bgCtx.lineWidth = 1.6;
     bgCtx.stroke();
 
     // 3. Speedometer elements
