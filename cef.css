@@ -135,10 +135,7 @@ body {
     display: flex;
     gap: 5px;
     align-items: center;
-    background: rgba(10, 10, 10, 0.6);
-    border: 1px solid rgba(255, 255, 255, 0.06);
     padding: 3px 8px;
-    border-radius: 20px;
     z-index: 10;
 }
 
@@ -239,7 +236,6 @@ body {
     overflow: hidden;
     transform: scaleX(var(--value, 1));
     transform-origin: left center;
-    transition: transform 0.3s ease;
 }
 
 .progress-fill::before {
@@ -251,7 +247,6 @@ body {
     height: 100%;
     transform: scaleX(calc(1 / var(--value, 1)));
     transform-origin: left center;
-    transition: transform 0.3s ease;
 }
 
 .health-bar-fill::before {

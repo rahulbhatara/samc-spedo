@@ -65,9 +65,6 @@ function drawDialBg(ctx, cx, cy, r) {
     ctx.arc(cx, cy, r, 0, TWO_PI);
     ctx.fillStyle = 'rgba(10, 10, 10, 0.65)';
     ctx.fill();
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
-    ctx.lineWidth = 1.1;
-    ctx.stroke();
 }
 
 function drawZoneArcs(ctx, cx, cy, arcR, zones, lineWidth) {
@@ -120,12 +117,63 @@ function drawLabels(ctx, cx, cy, labelR, labels, font, defaultColor) {
 }
 
 function drawStaticBuffer() {
-    const ctx = bgCtx;
-    ctx.clearRect(0, 0, BASE_CANVAS_W, BASE_CANVAS_H);
+    if (!bgCtx) return;
 
-    drawDialBg(ctx, S_CX, S_CY, S_MAIN_R);
+    bgCtx.clearRect(0, 0, BASE_CANVAS_W, BASE_CANVAS_H);
 
-    drawZoneArcs(ctx, S_CX, S_CY, S_ARC_R, [
+    // 1. Draw unified background (fills the entire merged shape in a single call to prevent transparency overlap)
+    bgCtx.beginPath();
+    bgCtx.arc(S_CX, S_CY, S_MAIN_R, 0, TWO_PI);
+    
+    const R_LEFT = R_CX - R_MAIN_R;
+    bgCtx.moveTo(R_CX + R_MAIN_R, R_CY);
+    bgCtx.arc(R_CX, R_CY, R_MAIN_R, Math.PI, 0, false);
+    bgCtx.arcTo(R_CX + R_MAIN_R, 180, R_LEFT, 180, 15);
+    bgCtx.lineTo(150, 180);
+    bgCtx.lineTo(R_LEFT, R_CY);
+    bgCtx.closePath();
+
+    bgCtx.fillStyle = 'rgba(10, 10, 10, 0.65)';
+    bgCtx.fill();
+
+    // 2. Stroke the RPM background, clipped to the outside of the Speedometer circle so it doesn't draw inside
+    bgCtx.save();
+    bgCtx.beginPath();
+    bgCtx.rect(0, 0, BASE_CANVAS_W, BASE_CANVAS_H);
+    bgCtx.arc(S_CX, S_CY, S_MAIN_R, 0, TWO_PI, true);
+    bgCtx.clip();
+
+    bgCtx.beginPath();
+    bgCtx.arc(R_CX, R_CY, R_MAIN_R, 0, TWO_PI);
+
+    // Dark outer silhouette outline
+    bgCtx.strokeStyle = 'rgba(0, 0, 0, 0.4)';
+    bgCtx.lineWidth = 2.2;
+    bgCtx.stroke();
+
+    // Light inner outline
+    bgCtx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+    bgCtx.lineWidth = 1.1;
+    bgCtx.stroke();
+    bgCtx.restore();
+
+    // 2b. Stroke the Speedometer background outline
+    bgCtx.beginPath();
+    bgCtx.arc(S_CX, S_CY, S_MAIN_R, 0, TWO_PI);
+    // Dark outer silhouette outline
+    bgCtx.strokeStyle = 'rgba(0, 0, 0, 0.4)';
+    bgCtx.lineWidth = 2.2;
+    bgCtx.stroke();
+
+    bgCtx.beginPath();
+    bgCtx.arc(S_CX, S_CY, S_MAIN_R, 0, TWO_PI);
+    // Light inner outline
+    bgCtx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+    bgCtx.lineWidth = 1.1;
+    bgCtx.stroke();
+
+    // 3. Speedometer elements
+    drawZoneArcs(bgCtx, S_CX, S_CY, S_ARC_R, [
         { start: -110, end: 10, color: '#2ecc71', alpha: 0.6 },
         { start: 10, end: 50, color: '#f1c40f', alpha: 0.6 },
         { start: 50, end: 110, color: '#e74c3c', alpha: 0.8 },
@@ -138,17 +186,22 @@ function drawStaticBuffer() {
             major: mph % 40 === 0
         });
     }
-    drawTicks(ctx, S_CX, S_CY, S_TICK_OUTER, S_TICK_MAJ, S_TICK_MIN, speedTicks);
+    drawTicks(bgCtx, S_CX, S_CY, S_TICK_OUTER, S_TICK_MAJ, S_TICK_MIN, speedTicks);
 
     const speedLabels = [];
     for (let mph = 0; mph <= 200; mph += 20) {
         speedLabels.push({ angle: mph * 1.1 - 110, text: '' + mph });
     }
-    drawLabels(ctx, S_CX, S_CY, S_LABEL_R, speedLabels, 'bold 7px Formula1, sans-serif', 'rgba(255,255,255,0.5)');
+    drawLabels(bgCtx, S_CX, S_CY, S_LABEL_R, speedLabels, 'bold 7px Formula1, sans-serif', 'rgba(255,255,255,0.5)');
 
-    drawDialBg(ctx, R_CX, R_CY, R_MAIN_R);
+    // 4. RPM elements (clipped to the outside of the Speedometer circle to prevent overlap with Speedometer ticks/labels)
+    bgCtx.save();
+    bgCtx.beginPath();
+    bgCtx.rect(0, 0, BASE_CANVAS_W, BASE_CANVAS_H);
+    bgCtx.arc(S_CX, S_CY, S_MAIN_R, 0, TWO_PI, true);
+    bgCtx.clip();
 
-    drawZoneArcs(ctx, R_CX, R_CY, R_ARC_R, [
+    drawZoneArcs(bgCtx, R_CX, R_CY, R_ARC_R, [
         { start: 70, end: 110, color: '#e74c3c', alpha: 0.8 },
     ], 2.25);
 
@@ -156,27 +209,29 @@ function drawStaticBuffer() {
     for (let v = 0; v <= 11; v++) {
         rpmTicks.push({ angle: v * 20 - 110, major: true });
     }
-    drawTicks(ctx, R_CX, R_CY, R_TICK_OUTER, R_TICK_INNER, R_TICK_INNER, rpmTicks);
+    drawTicks(bgCtx, R_CX, R_CY, R_TICK_OUTER, R_TICK_INNER, R_TICK_INNER, rpmTicks);
 
     const rpmLabels = [];
     for (let v = 0; v <= 11; v++) {
+        if (v <= 2) continue;
         rpmLabels.push({
             angle: v * 20 - 110,
             text: '' + v,
             color: v >= 7 ? '#ff4757' : undefined
         });
     }
-    drawLabels(ctx, R_CX, R_CY, R_LABEL_R, rpmLabels, 'bold 7px Formula1, sans-serif', 'rgba(255,255,255,0.5)');
+    drawLabels(bgCtx, R_CX, R_CY, R_LABEL_R, rpmLabels, 'bold 7px Formula1, sans-serif', 'rgba(255,255,255,0.5)');
 
-    ctx.font = 'bold 7.5px Formula1, sans-serif';
-    ctx.fillStyle = 'rgba(255,255,255,0.6)';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('RPM', R_CX, R_UNIT_Y);
+    bgCtx.font = 'bold 7.5px Formula1, sans-serif';
+    bgCtx.fillStyle = 'rgba(255,255,255,0.6)';
+    bgCtx.textAlign = 'center';
+    bgCtx.textBaseline = 'middle';
+    bgCtx.fillText('RPM', R_CX, R_UNIT_Y);
 
-    ctx.font = '5px Formula1, sans-serif';
-    ctx.fillStyle = 'rgba(255,255,255,0.3)';
-    ctx.fillText('x1000', R_CX, R_MULT_Y);
+    bgCtx.font = '5px Formula1, sans-serif';
+    bgCtx.fillStyle = 'rgba(255,255,255,0.3)';
+    bgCtx.fillText('x1000', R_CX, R_MULT_Y);
+    bgCtx.restore();
 }
 
 function drawNeedle(ctx, cx, cy, angleDeg, len, strokeW, capOuter, capInner) {
@@ -212,10 +267,23 @@ function renderFrame() {
     if (!renderDirty || !bgCanvas) return;
     renderDirty = false;
 
+    // 1. Clear main canvas
     mainCtx.clearRect(0, 0, BASE_CANVAS_W, BASE_CANVAS_H);
 
+    // 2. Draw unified static backgrounds (Speedometer + RPM combined)
     mainCtx.drawImage(bgCanvas, 0, 0, BASE_CANVAS_W, BASE_CANVAS_H);
 
+    // 3. Draw RPM needle (clipped to the outside of the Speedometer circle so it never overlaps the Speedometer)
+    mainCtx.save();
+    mainCtx.beginPath();
+    mainCtx.rect(0, 0, BASE_CANVAS_W, BASE_CANVAS_H);
+    mainCtx.arc(S_CX, S_CY, S_MAIN_R, 0, TWO_PI, true);
+    mainCtx.clip();
+
+    drawNeedle(mainCtx, R_CX, R_CY, displayRpmAngle, R_NEEDLE_LEN, R_NEEDLE_W, R_CAP_OUTER, R_CAP_INNER);
+    mainCtx.restore();
+
+    // 4. Draw Gear indicator
     mainCtx.save();
     mainCtx.font = '900 15px Formula1, sans-serif';
     mainCtx.fillStyle = '#ff6b35';
@@ -232,8 +300,8 @@ function renderFrame() {
     mainCtx.fillText(display, 110, 90);
     mainCtx.restore();
 
+    // 5. Draw Speedometer needle
     drawNeedle(mainCtx, S_CX, S_CY, displaySpeedAngle, S_NEEDLE_LEN, S_NEEDLE_W, S_CAP_OUTER, S_CAP_INNER);
-    drawNeedle(mainCtx, R_CX, R_CY, displayRpmAngle, R_NEEDLE_LEN, R_NEEDLE_W, R_CAP_OUTER, R_CAP_INNER);
 }
 
 function animateNeedles(timestamp) {
@@ -418,6 +486,26 @@ function setSeatbelts(state) {
 function setOdometer(distance) {
     currentOdometer = distance;
     if (EL.odometer) EL.odometer.textContent = distance.toFixed(1) + ' mi';
+}
+
+function setPosition(left, top) {
+    if (!dashboardEl) dashboardEl = document.getElementById('speedometer');
+    if (!dashboardEl) return;
+    
+    const leftVal = typeof left === 'number' ? left + 'px' : left;
+    const topVal = typeof top === 'number' ? top + 'px' : top;
+    
+    dashboardEl.style.left = leftVal;
+    dashboardEl.style.top = topVal;
+    dashboardEl.style.bottom = 'auto';
+    dashboardEl.style.right = 'auto';
+    saveSettings();
+}
+
+function setScale(scale) {
+    currentScale = Math.min(Math.max(scale, 0.5), 2.0);
+    updateScale();
+    saveSettings();
 }
 
 let dashboardEl = null;
