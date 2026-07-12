@@ -381,50 +381,55 @@ function setEngine(state) {
 }
 
 function setSpeed(speed) {
-    currentSpeed = speed;
+    currentSpeed = Number(speed);
+    if (isNaN(currentSpeed)) currentSpeed = 0;
 
-    const mph = Math.round(speed * 2.236936);
+    const mph = Math.round(currentSpeed * 2.236936);
 
     if (EL.speedDisplay) EL.speedDisplay.textContent = mph;
 
     const capped = Math.min(Math.max(mph, 0), 200);
-    targetSpeedAngle = capped * 1.1 - 110;
+    const angle = capped * 1.1 - 110;
+    targetSpeedAngle = isNaN(angle) ? -110 : angle;
     startAnimation();
 }
 
 function setRPM(rpm) {
-    currentRpm = rpm;
+    currentRpm = Number(rpm);
+    if (isNaN(currentRpm)) currentRpm = 0;
 
-    const rpmVal = rpm * 10;
+    const rpmVal = currentRpm * 10;
 
     const angle = rpmVal * 20 - 110;
-    targetRpmAngle = Math.min(Math.max(angle, -110), 110);
+    const targetAngle = Math.min(Math.max(angle, -110), 110);
+    targetRpmAngle = isNaN(targetAngle) ? -110 : targetAngle;
     startAnimation();
 }
-function setFuel(fuel) {
 
-    if (currentFuel === fuel) return;
-    currentFuel = fuel;
+function setFuel(fuel) {
+    let fuelNum = Number(fuel);
+    if (isNaN(fuelNum)) fuelNum = 0;
+    if (currentFuel === fuelNum) return;
+    currentFuel = fuelNum;
 
     if (EL.fuelFill) {
-
-        const safeFuel = Math.max(fuel, 0.001);
+        const safeFuel = Math.max(fuelNum, 0.001);
         EL.fuelFill.style.setProperty('--value', safeFuel);
     }
-    if (EL.fuelText) EL.fuelText.textContent = Math.round(fuel * 100) + '%';
+    if (EL.fuelText) EL.fuelText.textContent = Math.round(fuelNum * 100) + '%';
 }
 
 function setHealth(health) {
-
-    if (currentHealth === health) return;
-    currentHealth = health;
+    let healthNum = Number(health);
+    if (isNaN(healthNum)) healthNum = 0;
+    if (currentHealth === healthNum) return;
+    currentHealth = healthNum;
 
     if (EL.healthFill) {
-
-        const safeHealth = Math.max(health, 0.001);
+        const safeHealth = Math.max(healthNum, 0.001);
         EL.healthFill.style.setProperty('--value', safeHealth);
     }
-    if (EL.healthText) EL.healthText.textContent = Math.round(health * 100) + '%';
+    if (EL.healthText) EL.healthText.textContent = Math.round(healthNum * 100) + '%';
 }
 
 function setGear(gear) {
@@ -484,8 +489,10 @@ function setSeatbelts(state) {
 }
 
 function setOdometer(distance) {
-    currentOdometer = distance;
-    if (EL.odometer) EL.odometer.textContent = distance.toFixed(1) + ' mi';
+    let distNum = Number(distance);
+    if (isNaN(distNum)) distNum = 0;
+    currentOdometer = distNum;
+    if (EL.odometer) EL.odometer.textContent = distNum.toFixed(1) + ' mi';
 }
 
 function setPosition(left, top) {
@@ -632,6 +639,13 @@ function setupDragging() {
         dashboard.style.cursor = '';
         saveSettings();
     });
+
+    dashboard.addEventListener('lostpointercapture', function (e) {
+        if (!isDragging) return;
+        isDragging = false;
+        dashboard.style.cursor = '';
+        saveSettings();
+    });
 }
 
 function setupControls() {
@@ -663,6 +677,19 @@ function setupControls() {
             resetSettings();
         });
     }
+}
+
+function cleanupSpeedometer() {
+    for (const id in blinkTimers) {
+        if (blinkTimers[id]) {
+            clearInterval(blinkTimers[id]);
+            delete blinkTimers[id];
+        }
+    }
+    if (EL.indicatorLeft) EL.indicatorLeft.style.opacity = '';
+    if (EL.indicatorRight) EL.indicatorRight.style.opacity = '';
+    if (EL.indicatorSeatbelt) EL.indicatorSeatbelt.style.opacity = '';
+    animRunning = false;
 }
 
 document.addEventListener('DOMContentLoaded', function () {
