@@ -491,12 +491,12 @@ body {
     }
 }
 
-/* Minimalist Embedded Sync Panel (Floats Cleanly Above Speedo Controls) */
+/* Minimalist Embedded Sync Panel (Ultra Lightweight - Low CPU/RAM Overhead) */
 .sync-panel-embedded {
     position: absolute;
     bottom: calc(100% + 46px);
     right: 8px;
-    width: 220px;
+    width: 240px;
     background: #141414;
     border: 1px solid rgba(255, 255, 255, 0.15);
     border-radius: 8px;
@@ -573,6 +573,7 @@ body {
 
 .sync-code-box {
     flex: 1;
+    min-width: 0;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -589,25 +590,30 @@ body {
     letter-spacing: 2px;
     color: #2ecc71;
     font-family: monospace, sans-serif;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .sync-input-row {
     display: flex;
     gap: 6px;
     align-items: center;
+    width: 100%;
 }
 
 .sync-input-row input {
     flex: 1;
+    min-width: 0;
     background: #080808;
     border: 1px solid rgba(255, 255, 255, 0.15);
     border-radius: 4px;
-    padding: 5px 8px;
+    padding: 5px 6px;
     color: #ffffff;
     font-family: monospace, sans-serif;
-    font-size: 14px;
+    font-size: 13px;
     font-weight: bold;
-    letter-spacing: 2px;
+    letter-spacing: 1.5px;
     text-transform: uppercase;
     outline: none;
     height: 27px;
@@ -627,7 +633,7 @@ body {
     color: #ffffff;
     border: none;
     border-radius: 4px;
-    padding: 6px 12px;
+    padding: 6px 10px;
     font-family: inherit;
     font-size: 8px;
     font-weight: 700;
@@ -635,10 +641,31 @@ body {
     text-transform: uppercase;
     cursor: pointer;
     white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .sync-btn-connect:hover {
     background: #ff8552;
+}
+
+.sync-btn-danger {
+    background: #e74c3c;
+    color: #ffffff;
+    border: none;
+    border-radius: 4px;
+    padding: 6px 10px;
+    font-family: inherit;
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.sync-btn-danger:hover {
+    background: #ff4757;
 }
 
 .sync-status-compact {
