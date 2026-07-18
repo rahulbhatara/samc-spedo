@@ -6,7 +6,6 @@ setSpeed_setRPM.txt
 
 # Dependencies
 node_modules/
-server/node_modules/
 
 # Logs & Environment
 *.log
