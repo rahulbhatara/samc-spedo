@@ -818,12 +818,12 @@ function generateHostCode() {
 }
 
 function showSyncModal() {
-    const modal = document.getElementById('sync-modal');
+    const modal = document.getElementById('sync-panel');
     if (modal) modal.classList.remove('hide');
 }
 
 function hideSyncModal() {
-    const modal = document.getElementById('sync-modal');
+    const modal = document.getElementById('sync-panel');
     if (modal) modal.classList.add('hide');
 }
 
@@ -1210,7 +1210,10 @@ function setupSyncSystem() {
     if (btnSync) {
         btnSync.addEventListener('click', function (e) {
             e.stopPropagation();
-            showSyncModal();
+            const panel = document.getElementById('sync-panel');
+            if (panel) {
+                panel.classList.toggle('hide');
+            }
         });
     }
 
@@ -1218,15 +1221,6 @@ function setupSyncSystem() {
         btnSyncClose.addEventListener('click', function (e) {
             e.stopPropagation();
             hideSyncModal();
-        });
-    }
-
-    const modalOverlay = document.getElementById('sync-modal');
-    if (modalOverlay) {
-        modalOverlay.addEventListener('click', function (e) {
-            if (e.target === modalOverlay) {
-                hideSyncModal();
-            }
         });
     }
 
