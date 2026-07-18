@@ -1262,23 +1262,6 @@ function setupSyncSystem() {
         });
     }
 
-    if (btnCopyCode) {
-        btnCopyCode.addEventListener('click', function (e) {
-            e.stopPropagation();
-            navigator.clipboard.writeText(syncState.code).then(function () {
-                const origColor = btnCopyCode.style.color;
-                btnCopyCode.style.color = '#2ecc71';
-                btnCopyCode.style.borderColor = '#2ecc71';
-                setTimeout(function () {
-                    btnCopyCode.style.color = origColor;
-                    btnCopyCode.style.borderColor = '';
-                }, 1200);
-            }).catch(function (err) {
-                console.error('Failed to copy pairing code:', err);
-            });
-        });
-    }
-
     const btnHostConnect = document.getElementById('btn-host-connect');
     const btnHostDisconnect = document.getElementById('btn-host-disconnect');
 
