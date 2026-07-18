@@ -490,28 +490,23 @@ body {
     }
 }
 
-/* Modal Header */
-.sync-modal-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 14px 18px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-/* Minimalist Embedded Sync Panel (Attached on Top of Speedo) */
+/* Minimalist Embedded Sync Panel (Floats Directly Above Speedo without shifting position) */
 .sync-panel-embedded {
-    width: 230px;
-    background: rgba(18, 18, 18, 0.9);
+    position: absolute;
+    bottom: calc(100% + 4px);
+    right: 8px;
+    width: 220px;
+    background: rgba(18, 18, 18, 0.92);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: 10px;
     padding: 10px 12px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
     display: flex;
     flex-direction: column;
     gap: 8px;
+    z-index: 200;
     transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     transform-origin: bottom right;
 }
