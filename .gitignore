@@ -3,3 +3,18 @@ agent/
 skills-lock.json
 setFuel_setHealth.txt
 setSpeed_setRPM.txt
+
+# Dependencies
+node_modules/
+server/node_modules/
+
+# Logs & Environment
+*.log
+.env
+.env.local
+
+# System & IDE files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

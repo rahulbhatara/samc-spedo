@@ -41,6 +41,19 @@ let leftIndicator = false;
 let rightIndicator = false;
 let seatbeltFastened = false;
 
+// SAMC Link Sync State
+let syncState = {
+    mode: 'none',        // 'host' | 'client' | 'none'
+    role: 'host',        // 'host' | 'client'
+    code: '',            // pairing room code
+    serverUrl: '',      // websocket server URL
+    socket: null,
+    connected: false,
+    reconnectTimer: null
+};
+let pendingTelemetry = {};
+let telemetryTimeout = null;
+
 let targetSpeedAngle = -110;
 let displaySpeedAngle = -110;
 let targetRpmAngle = -110;
@@ -264,6 +277,10 @@ function drawNeedle(ctx, cx, cy, angleDeg, len, strokeW, capOuter, capInner) {
 }
 
 function renderFrame() {
+    if (syncState.mode === 'host' && syncState.connected) {
+        renderDirty = false;
+        return;
+    }
     if (!renderDirty || !bgCanvas) return;
     renderDirty = false;
 
@@ -343,6 +360,7 @@ function animateNeedles(timestamp) {
 }
 
 function startAnimation() {
+    if (syncState.mode === 'host' && syncState.connected) return;
     if (!animRunning) {
         animRunning = true;
         lastFrame = performance.now();
@@ -369,7 +387,25 @@ function stopBlink(el) {
     }
 }
 
+function broadcastTelemetry(key, value) {
+    if (syncState.mode !== 'host' || !syncState.connected || !syncState.socket) return;
+    pendingTelemetry[key] = value;
+    if (!telemetryTimeout) {
+        telemetryTimeout = setTimeout(function () {
+            if (syncState.socket && syncState.socket.readyState === WebSocket.OPEN) {
+                syncState.socket.send(JSON.stringify({
+                    type: 'telemetry',
+                    data: pendingTelemetry
+                }));
+            }
+            pendingTelemetry = {};
+            telemetryTimeout = null;
+        }, 16.6);
+    }
+}
+
 function setEngine(state) {
+    broadcastTelemetry('engine', state);
     currentEngine = state;
     if (EL.indicatorEngine) {
         if (state) {
@@ -381,6 +417,7 @@ function setEngine(state) {
 }
 
 function setSpeed(speed) {
+    broadcastTelemetry('speed', speed);
     currentSpeed = Number(speed);
     if (isNaN(currentSpeed)) currentSpeed = 0;
 
@@ -395,6 +432,7 @@ function setSpeed(speed) {
 }
 
 function setRPM(rpm) {
+    broadcastTelemetry('rpm', rpm);
     currentRpm = Number(rpm);
     if (isNaN(currentRpm)) currentRpm = 0;
 
@@ -407,6 +445,7 @@ function setRPM(rpm) {
 }
 
 function setFuel(fuel) {
+    broadcastTelemetry('fuel', fuel);
     let fuelNum = Number(fuel);
     if (isNaN(fuelNum)) fuelNum = 0;
     if (currentFuel === fuelNum) return;
@@ -420,6 +459,7 @@ function setFuel(fuel) {
 }
 
 function setHealth(health) {
+    broadcastTelemetry('health', health);
     let healthNum = Number(health);
     if (isNaN(healthNum)) healthNum = 0;
     if (currentHealth === healthNum) return;
@@ -433,12 +473,14 @@ function setHealth(health) {
 }
 
 function setGear(gear) {
+    broadcastTelemetry('gear', gear);
     currentGear = gear;
     renderDirty = true;
     renderFrame();
 }
 
 function setHeadlights(state) {
+    broadcastTelemetry('headlights', state);
     currentHeadlights = state;
     if (EL.indicatorHeadlights) {
         if (state > 0) {
@@ -450,6 +492,7 @@ function setHeadlights(state) {
 }
 
 function setLeftIndicator(state) {
+    broadcastTelemetry('leftIndicator', state);
     leftIndicator = state;
     if (EL.indicatorLeft) {
         if (state) {
@@ -463,6 +506,7 @@ function setLeftIndicator(state) {
 }
 
 function setRightIndicator(state) {
+    broadcastTelemetry('rightIndicator', state);
     rightIndicator = state;
     if (EL.indicatorRight) {
         if (state) {
@@ -476,6 +520,7 @@ function setRightIndicator(state) {
 }
 
 function setSeatbelts(state) {
+    broadcastTelemetry('seatbelt', state);
     seatbeltFastened = state;
     if (EL.indicatorSeatbelt) {
         if (!state) {
@@ -489,6 +534,7 @@ function setSeatbelts(state) {
 }
 
 function setOdometer(distance) {
+    broadcastTelemetry('odometer', distance);
     let distNum = Number(distance);
     if (isNaN(distNum)) distNum = 0;
     currentOdometer = distNum;
@@ -686,9 +732,18 @@ function cleanupSpeedometer() {
             delete blinkTimers[id];
         }
     }
-    if (EL.indicatorLeft) EL.indicatorLeft.style.opacity = '';
-    if (EL.indicatorRight) EL.indicatorRight.style.opacity = '';
-    if (EL.indicatorSeatbelt) EL.indicatorSeatbelt.style.opacity = '';
+    if (EL.indicatorLeft) {
+        EL.indicatorLeft.style.opacity = '';
+        EL.indicatorLeft.classList.remove('on');
+    }
+    if (EL.indicatorRight) {
+        EL.indicatorRight.style.opacity = '';
+        EL.indicatorRight.classList.remove('on');
+    }
+    if (EL.indicatorSeatbelt) {
+        EL.indicatorSeatbelt.style.opacity = '';
+        EL.indicatorSeatbelt.classList.remove('on');
+    }
     animRunning = false;
 }
 
@@ -733,4 +788,388 @@ document.addEventListener('DOMContentLoaded', function () {
     loadSettings();
     setupDragging();
     setupControls();
+    setupSyncSystem();
 });
+
+/* ==========================================================================
+   SAMC Link Sync System Implementation
+   ========================================================================== */
+
+function generateHostCode() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let code = '';
+    for (let i = 0; i < 6; i++) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return code;
+}
+
+function showSyncModal() {
+    const modal = document.getElementById('sync-modal');
+    if (modal) modal.classList.remove('hide');
+}
+
+function hideSyncModal() {
+    const modal = document.getElementById('sync-modal');
+    if (modal) modal.classList.add('hide');
+}
+
+function updateSyncStatus(stateClass, text) {
+    const dot = document.getElementById('sync-status-dot');
+    const txt = document.getElementById('sync-status-text');
+    if (dot) {
+        dot.className = 'status-dot ' + stateClass;
+    }
+    if (txt) {
+        txt.textContent = text;
+    }
+}
+
+function updateActivePill(title, subtitle) {
+    const pillText = document.getElementById('sync-active-text');
+    if (pillText) {
+        pillText.innerHTML = title + ' <span style="font-weight:400; opacity:0.65;">(' + subtitle + ')</span>';
+    }
+}
+
+function resetSpeedometerValues() {
+    setEngine(false);
+    setSpeed(0);
+    setRPM(0);
+    setFuel(1);
+    setHealth(1);
+    setGear(0);
+    setHeadlights(0);
+    setLeftIndicator(false);
+    setRightIndicator(false);
+    setSeatbelts(0);
+    setOdometer(0);
+}
+
+function connectWebSocket(url, role, roomCode) {
+    if (syncState.socket) {
+        syncState.socket.close();
+    }
+
+    updateSyncStatus('connecting', 'Connecting...');
+
+    try {
+        const socket = new WebSocket(url);
+        syncState.socket = socket;
+
+        socket.onopen = function () {
+            console.log('[SAMC Sync] Connected to broker server.');
+            socket.send(JSON.stringify({
+                type: 'join',
+                room: roomCode,
+                role: role
+            }));
+        };
+
+        socket.onmessage = function (event) {
+            try {
+                const msg = JSON.parse(event.data);
+
+                if (msg.type === 'joined') {
+                    syncState.connected = true;
+                    syncState.mode = role;
+                    syncState.code = roomCode;
+
+                    updateSyncStatus('connected', role === 'host' ? 'Host Connected' : 'Client Connected');
+
+                    localStorage.setItem('spedo_sync_url', url);
+                    if (role === 'client') {
+                        localStorage.setItem('spedo_sync_code', roomCode);
+                    }
+
+                    document.getElementById('btn-sync-connect').classList.add('hide');
+                    document.getElementById('btn-sync-disconnect').classList.remove('hide');
+
+                    setTimeout(hideSyncModal, 800);
+
+                    if (role === 'client') {
+                        const dashboard = document.getElementById('speedometer');
+                        if (dashboard) dashboard.classList.remove('sync-hidden');
+                    } else if (role === 'host') {
+                        updateActivePill('Host Ready', 'Waiting for Client...');
+                    }
+                } else if (msg.type === 'client_connected') {
+                    if (syncState.mode === 'host') {
+                        const dashboard = document.getElementById('speedometer');
+                        if (dashboard) {
+                            dashboard.classList.add('sync-hidden');
+                        }
+                        updateActivePill('Syncing HUD', 'Code: ' + syncState.code);
+                        const activePill = document.getElementById('sync-active-pill');
+                        if (activePill) activePill.classList.remove('hide');
+
+                        cleanupSpeedometer();
+                    }
+                } else if (msg.type === 'client_disconnected') {
+                    if (syncState.mode === 'host') {
+                        const dashboard = document.getElementById('speedometer');
+                        if (dashboard) {
+                            dashboard.classList.remove('sync-hidden');
+                        }
+                        const activePill = document.getElementById('sync-active-pill');
+                        if (activePill) activePill.classList.add('hide');
+
+                        renderDirty = true;
+                        startAnimation();
+                    }
+                } else if (msg.type === 'host_disconnected') {
+                    if (syncState.mode === 'client') {
+                        resetSpeedometerValues();
+                    }
+                } else if (msg.type === 'telemetry') {
+                    if (syncState.mode === 'client') {
+                        const data = msg.data;
+                        if (data.engine !== undefined) setEngine(data.engine);
+                        if (data.speed !== undefined) setSpeed(data.speed);
+                        if (data.rpm !== undefined) setRPM(data.rpm);
+                        if (data.fuel !== undefined) setFuel(data.fuel);
+                        if (data.health !== undefined) setHealth(data.health);
+                        if (data.gear !== undefined) setGear(data.gear);
+                        if (data.headlights !== undefined) setHeadlights(data.headlights);
+                        if (data.leftIndicator !== undefined) setLeftIndicator(data.leftIndicator);
+                        if (data.rightIndicator !== undefined) setRightIndicator(data.rightIndicator);
+                        if (data.seatbelt !== undefined) setSeatbelts(data.seatbelt);
+                        if (data.odometer !== undefined) setOdometer(data.odometer);
+                    }
+                } else if (msg.type === 'error') {
+                    alert('Sync Error: ' + msg.message);
+                    disconnectWebSocket();
+                }
+            } catch (e) {
+                console.error('[SAMC Sync] Message parsing error:', e);
+            }
+        };
+
+        socket.onclose = function () {
+            console.log('[SAMC Sync] WebSocket connection closed.');
+            handleDisconnectState();
+        };
+
+        socket.onerror = function (err) {
+            console.error('[SAMC Sync] WebSocket error:', err);
+            updateSyncStatus('disconnected', 'Connection Error');
+        };
+
+    } catch (e) {
+        console.error('[SAMC Sync] Connection failed:', e);
+        updateSyncStatus('disconnected', 'Connection Failed');
+    }
+}
+
+function disconnectWebSocket() {
+    if (syncState.socket) {
+        syncState.socket.close();
+        syncState.socket = null;
+    }
+    handleDisconnectState();
+}
+
+function handleDisconnectState() {
+    syncState.connected = false;
+    syncState.mode = 'none';
+
+    updateSyncStatus('disconnected', 'Disconnected');
+
+    document.getElementById('btn-sync-connect').classList.remove('hide');
+    document.getElementById('btn-sync-disconnect').classList.add('hide');
+
+    const dashboard = document.getElementById('speedometer');
+    if (dashboard) {
+        dashboard.classList.remove('sync-hidden');
+    }
+
+    const activePill = document.getElementById('sync-active-pill');
+    if (activePill) {
+        activePill.classList.add('hide');
+    }
+
+    if (syncState.role === 'client') {
+        resetSpeedometerValues();
+    }
+}
+
+function setupSyncSystem() {
+    const btnSync = document.getElementById('btn-sync');
+    const btnSyncClose = document.getElementById('btn-sync-close');
+    const tabHost = document.getElementById('sync-role-host');
+    const tabClient = document.getElementById('sync-role-client');
+    const panelHost = document.getElementById('sync-host-panel');
+    const panelClient = document.getElementById('sync-client-panel');
+    const hostCodeText = document.getElementById('sync-host-code');
+    const btnCopyCode = document.getElementById('btn-copy-code');
+    const clientCodeInput = document.getElementById('sync-client-code-input');
+    const serverUrlInput = document.getElementById('sync-server-url');
+    const btnConnect = document.getElementById('btn-sync-connect');
+    const btnDisconnect = document.getElementById('btn-sync-disconnect');
+    const btnRestoreHud = document.getElementById('btn-restore-hud');
+
+    syncState.code = generateHostCode();
+    if (hostCodeText) hostCodeText.textContent = syncState.code;
+
+    if (btnSync) {
+        btnSync.addEventListener('click', function (e) {
+            e.stopPropagation();
+            showSyncModal();
+        });
+    }
+
+    if (btnSyncClose) {
+        btnSyncClose.addEventListener('click', function (e) {
+            e.stopPropagation();
+            hideSyncModal();
+        });
+    }
+
+    const modalOverlay = document.getElementById('sync-modal');
+    if (modalOverlay) {
+        modalOverlay.addEventListener('click', function (e) {
+            if (e.target === modalOverlay) {
+                hideSyncModal();
+            }
+        });
+    }
+
+    const isHttps = window.location.protocol === 'https:';
+    const wsProtocol = isHttps ? 'wss://' : 'ws://';
+    const defaultHost = (window.location.hostname && window.location.hostname !== '') ? window.location.hostname : 'localhost';
+    const defaultWsUrl = isHttps ? (wsProtocol + defaultHost) : (wsProtocol + defaultHost + ':8080');
+
+    const cachedUrl = localStorage.getItem('spedo_sync_url');
+    if (cachedUrl) {
+        syncState.serverUrl = cachedUrl;
+        if (serverUrlInput) serverUrlInput.value = cachedUrl;
+    } else {
+        syncState.serverUrl = defaultWsUrl;
+        if (serverUrlInput) serverUrlInput.value = defaultWsUrl;
+    }
+
+    const cachedCode = localStorage.getItem('spedo_sync_code');
+    if (cachedCode && clientCodeInput) {
+        clientCodeInput.value = cachedCode;
+    }
+
+    if (tabHost) {
+        tabHost.addEventListener('click', function () {
+            syncState.role = 'host';
+            tabHost.classList.add('active');
+            if (tabClient) tabClient.classList.remove('active');
+            if (panelHost) panelHost.classList.remove('hide');
+            if (panelClient) panelClient.classList.add('hide');
+
+            syncState.code = generateHostCode();
+            if (hostCodeText) hostCodeText.textContent = syncState.code;
+        });
+    }
+
+    if (tabClient) {
+        tabClient.addEventListener('click', function () {
+            syncState.role = 'client';
+            tabClient.classList.add('active');
+            if (tabHost) tabHost.classList.remove('active');
+            if (panelClient) panelClient.classList.remove('hide');
+            if (panelHost) panelHost.classList.add('hide');
+        });
+    }
+
+    if (btnCopyCode) {
+        btnCopyCode.addEventListener('click', function (e) {
+            e.stopPropagation();
+            navigator.clipboard.writeText(syncState.code).then(function () {
+                const origColor = btnCopyCode.style.color;
+                btnCopyCode.style.color = '#2ecc71';
+                btnCopyCode.style.borderColor = '#2ecc71';
+                setTimeout(function () {
+                    btnCopyCode.style.color = origColor;
+                    btnCopyCode.style.borderColor = '';
+                }, 1200);
+            }).catch(function (err) {
+                console.error('Failed to copy pairing code:', err);
+            });
+        });
+    }
+
+    if (btnConnect) {
+        btnConnect.addEventListener('click', function () {
+            let url = serverUrlInput ? serverUrlInput.value.trim() : '';
+            if (!url) {
+                url = defaultWsUrl;
+            }
+
+            let code = syncState.code;
+            if (syncState.role === 'client') {
+                code = clientCodeInput ? clientCodeInput.value.trim().toUpperCase() : '';
+                if (!code || code.length !== 6) {
+                    alert('Please enter a valid 6-character pairing code');
+                    return;
+                }
+            }
+
+            connectWebSocket(url, syncState.role, code);
+        });
+    }
+
+    if (btnDisconnect) {
+        btnDisconnect.addEventListener('click', function () {
+            disconnectWebSocket();
+        });
+    }
+
+    if (btnRestoreHud) {
+        btnRestoreHud.addEventListener('click', function (e) {
+            e.stopPropagation();
+            disconnectWebSocket();
+        });
+    }
+
+    // Auto-connect via URL Query Parameters (useful for CEF games like RageMP)
+    const urlParams = new URLSearchParams(window.location.search);
+    const paramMode = urlParams.get('mode') || urlParams.get('role'); // 'host' or 'client'
+    const paramCode = urlParams.get('code'); // e.g. 'ABC123'
+    const paramServer = urlParams.get('server'); // e.g. 'ws://pc-elkom-cachyos:8080'
+
+    if (paramMode) {
+        const mode = paramMode.toLowerCase();
+        if (mode === 'host') {
+            syncState.role = 'host';
+            if (tabHost) tabHost.classList.add('active');
+            if (tabClient) tabClient.classList.remove('active');
+            if (panelHost) panelHost.classList.remove('hide');
+            if (panelClient) panelClient.classList.add('hide');
+
+            if (paramCode) {
+                syncState.code = paramCode.toUpperCase();
+                if (hostCodeText) hostCodeText.textContent = syncState.code;
+            }
+        } else if (mode === 'client') {
+            syncState.role = 'client';
+            if (tabClient) tabClient.classList.add('active');
+            if (tabHost) tabHost.classList.remove('active');
+            if (panelClient) panelClient.classList.remove('hide');
+            if (panelHost) panelHost.classList.add('hide');
+
+            if (paramCode) {
+                if (clientCodeInput) clientCodeInput.value = paramCode.toUpperCase();
+            }
+        }
+
+        if (paramServer) {
+            syncState.serverUrl = paramServer;
+            if (serverUrlInput) serverUrlInput.value = paramServer;
+        }
+
+        const finalCode = mode === 'host' ? syncState.code : (paramCode ? paramCode.toUpperCase() : '');
+        const finalServer = paramServer || syncState.serverUrl || defaultWsUrl;
+
+        if (finalCode && finalCode.length === 6) {
+            console.log('[SAMC Sync] Auto-connecting from query parameters: Mode=' + mode + ', Room=' + finalCode + ', Server=' + finalServer);
+            setTimeout(function () {
+                connectWebSocket(finalServer, mode, finalCode);
+            }, 100);
+        }
+    }
+}

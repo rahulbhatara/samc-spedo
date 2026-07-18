@@ -345,3 +345,435 @@ body {
 .speedo-dashboard:active {
     cursor: grabbing;
 }
+
+/* ==========================================================================
+   SAMC Speedometer WebSocket Sync UI Styles
+   ========================================================================== */
+
+/* Utility Classes */
+.hide {
+    display: none !important;
+}
+
+/* Sync Button Hover Effect */
+#btn-sync:hover {
+    color: #2ecc71;
+    background: rgba(46, 204, 113, 0.15);
+}
+
+/* Active Sync Badge Pill */
+.sync-active-pill {
+    position: fixed;
+    bottom: 25px;
+    right: 25px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(10, 10, 10, 0.85);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(46, 204, 113, 0.3);
+    padding: 8px 14px;
+    border-radius: 30px;
+    z-index: 99999;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.sync-active-pill .pill-text {
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: #ffffff;
+}
+
+.sync-active-pill .restore-hud-btn {
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 2px 0 6px;
+    transition: color 0.15s ease;
+    border-left: 1px solid rgba(255, 255, 255, 0.15);
+    margin-left: 2px;
+}
+
+.sync-active-pill .restore-hud-btn:hover {
+    color: #e74c3c;
+}
+
+/* Pulsing Status Indicator Dot */
+.pulse-dot {
+    width: 7px;
+    height: 7px;
+    background-color: #2ecc71;
+    border-radius: 50%;
+    box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.7);
+    animation: pulse-green 1.8s infinite;
+}
+
+@keyframes pulse-green {
+    0% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.7);
+    }
+    70% {
+        transform: scale(1);
+        box-shadow: 0 0 0 6px rgba(46, 204, 113, 0);
+    }
+    100% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(46, 204, 113, 0);
+    }
+}
+
+/* Hide speedometer on Host when syncing */
+.speedo-dashboard.sync-hidden {
+    opacity: 0;
+    pointer-events: none;
+    transform: scale(0.9) translateY(20px);
+    transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.speedo-dashboard {
+    transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Configuration Modal Overlay */
+.sync-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 999999;
+    opacity: 1;
+    transition: opacity 0.25s ease;
+}
+
+.sync-modal-overlay.hide {
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* Glassmorphic Modal Card */
+.sync-modal-card {
+    width: 320px;
+    background: rgba(18, 18, 18, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.65);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    animation: modal-enter 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes modal-enter {
+    from {
+        opacity: 0;
+        transform: scale(0.92) translateY(15px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+/* Modal Header */
+.sync-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.sync-modal-header h3 {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: #ff6b35;
+    margin: 0;
+}
+
+.sync-close-btn {
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+    transition: color 0.15s ease, transform 0.1s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+}
+
+.sync-close-btn:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.sync-close-btn:active {
+    transform: scale(0.9);
+}
+
+/* Modal Body */
+.sync-modal-body {
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+/* Segmented Control Mode Switch */
+.sync-segmented-control {
+    display: flex;
+    background: rgba(0, 0, 0, 0.4);
+    padding: 3px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.sync-tab-btn {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.5);
+    padding: 8px 0;
+    font-family: inherit;
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.sync-tab-btn:hover {
+    color: #ffffff;
+}
+
+.sync-tab-btn.active {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Description Text */
+.sync-desc {
+    font-family: sans-serif;
+    font-size: 11px;
+    line-height: 1.45;
+    color: rgba(255, 255, 255, 0.5);
+    margin-bottom: 5px;
+}
+
+/* Code Display Container */
+.sync-code-display-container {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 10px 14px;
+    border-radius: 8px;
+}
+
+.sync-code-label {
+    font-size: 7px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.sync-code-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.sync-code-text {
+    font-size: 20px;
+    font-weight: bold;
+    letter-spacing: 2px;
+    color: #2ecc71;
+    font-family: monospace, sans-serif;
+}
+
+.sync-action-icon-btn {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.6);
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+}
+
+.sync-action-icon-btn:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+.sync-action-icon-btn:active {
+    transform: scale(0.9);
+}
+
+/* Inputs and Labels */
+.sync-input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.sync-input-group label {
+    font-size: 7px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.sync-input-group input {
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    padding: 10px 12px;
+    color: #ffffff;
+    font-family: inherit;
+    font-size: 10px;
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.sync-input-group input:focus {
+    border-color: #ff6b35;
+    box-shadow: 0 0 6px rgba(255, 107, 53, 0.2);
+}
+
+.sync-input-group input::placeholder {
+    color: rgba(255, 255, 255, 0.25);
+}
+
+/* Status Indicator Area */
+.sync-status-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.status-dot.disconnected {
+    background-color: #95a5a6;
+}
+
+.status-dot.connecting {
+    background-color: #f1c40f;
+    box-shadow: 0 0 8px #f1c40f;
+}
+
+.status-dot.connected {
+    background-color: #2ecc71;
+    box-shadow: 0 0 8px #2ecc71;
+}
+
+#sync-status-text {
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.65);
+}
+
+/* Modal Footer */
+.sync-modal-footer {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 18px;
+    background: rgba(0, 0, 0, 0.2);
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Buttons */
+.sync-btn {
+    flex: 1;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 0;
+    font-family: inherit;
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sync-btn-primary {
+    background: #ff6b35;
+    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(255, 107, 53, 0.3);
+}
+
+.sync-btn-primary:hover {
+    background: #ff8552;
+    box-shadow: 0 4px 12px rgba(255, 107, 53, 0.4);
+}
+
+.sync-btn-primary:active {
+    transform: scale(0.98);
+}
+
+.sync-btn-danger {
+    background: rgba(231, 76, 60, 0.15);
+    color: #e74c3c;
+    border: 1px solid rgba(231, 76, 60, 0.3);
+}
+
+.sync-btn-danger:hover {
+    background: rgba(231, 76, 60, 0.25);
+    color: #ff6b6b;
+    border-color: rgba(231, 76, 60, 0.4);
+}
+
+.sync-btn-danger:active {
+    transform: scale(0.98);
+}
