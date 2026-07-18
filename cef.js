@@ -863,6 +863,33 @@ let peerInstance = null;
 let peerConnections = [];
 let clientConnection = null;
 
+const peerIceServers = {
+    config: {
+        iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' },
+            { urls: 'stun:stun2.l.google.com:19302' },
+            { urls: 'stun:stun3.l.google.com:19302' },
+            { urls: 'stun:stun4.l.google.com:19302' },
+            {
+                urls: 'turn:openrelay.metered.ca:80',
+                username: 'openrelay',
+                credential: 'openrelay'
+            },
+            {
+                urls: 'turn:openrelay.metered.ca:443',
+                username: 'openrelay',
+                credential: 'openrelay'
+            },
+            {
+                urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+                username: 'openrelay',
+                credential: 'openrelay'
+            }
+        ]
+    }
+};
+
 function connectPeerJS(role, roomCode) {
     disconnectPeerJS();
     if (syncState.socket) {
@@ -883,7 +910,7 @@ function connectPeerJS(role, roomCode) {
 
     if (role === 'host') {
         try {
-            peerInstance = new Peer(peerId);
+            peerInstance = new Peer(peerId, peerIceServers);
         } catch (e) {
             console.error('[SAMC PeerJS] Creation error:', e);
             updateSyncStatus('disconnected', 'P2P Error');
@@ -935,7 +962,7 @@ function connectPeerJS(role, roomCode) {
 
     } else if (role === 'client') {
         try {
-            peerInstance = new Peer();
+            peerInstance = new Peer(peerIceServers);
         } catch (e) {
             console.error('[SAMC PeerJS] Creation error:', e);
             updateSyncStatus('disconnected', 'P2P Error');
