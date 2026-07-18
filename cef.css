@@ -302,7 +302,8 @@ body {
 }
 
 .speedo-dashboard:hover .speedo-controls,
-.speedo-controls:hover {
+.speedo-controls:hover,
+.sync-panel-embedded:not(.hide) ~ .speedo-controls {
     opacity: 1;
     visibility: visible;
     pointer-events: auto;
@@ -490,10 +491,10 @@ body {
     }
 }
 
-/* Minimalist Embedded Sync Panel (Ultra Lightweight - Low CPU/RAM Overhead) */
+/* Minimalist Embedded Sync Panel (Floats Cleanly Above Speedo Controls) */
 .sync-panel-embedded {
     position: absolute;
-    bottom: calc(100% + 4px);
+    bottom: calc(100% + 46px);
     right: 8px;
     width: 220px;
     background: #141414;
@@ -503,7 +504,7 @@ body {
     display: flex;
     flex-direction: column;
     gap: 8px;
-    z-index: 200;
+    z-index: 10000;
 }
 
 .sync-panel-embedded.hide {
