@@ -924,8 +924,11 @@ function connectPeerJS(role, roomCode) {
             syncState.code = roomCode;
 
             updateSyncStatus('connected', 'Host Connected (P2P)');
-            document.getElementById('btn-sync-connect').classList.add('hide');
-            document.getElementById('btn-sync-disconnect').classList.remove('hide');
+            const hostConn = document.getElementById('btn-host-connect');
+            const hostDisc = document.getElementById('btn-host-disconnect');
+            if (hostConn) hostConn.classList.add('hide');
+            if (hostDisc) hostDisc.classList.remove('hide');
+
             setTimeout(hideSyncModal, 800);
             updateActivePill('Host Ready', 'Waiting for Client...');
         });
@@ -1171,8 +1174,15 @@ function handleDisconnectState() {
 
     updateSyncStatus('disconnected', 'Disconnected');
 
-    document.getElementById('btn-sync-connect').classList.remove('hide');
-    document.getElementById('btn-sync-disconnect').classList.add('hide');
+    const hostConn = document.getElementById('btn-host-connect');
+    const hostDisc = document.getElementById('btn-host-disconnect');
+    const clientConn = document.getElementById('btn-sync-connect');
+    const clientDisc = document.getElementById('btn-sync-disconnect');
+
+    if (hostConn) hostConn.classList.remove('hide');
+    if (hostDisc) hostDisc.classList.add('hide');
+    if (clientConn) clientConn.classList.remove('hide');
+    if (clientDisc) clientDisc.classList.add('hide');
 
     const dashboard = document.getElementById('speedometer');
     if (dashboard) {
@@ -1269,22 +1279,34 @@ function setupSyncSystem() {
         });
     }
 
+    const btnHostConnect = document.getElementById('btn-host-connect');
+    const btnHostDisconnect = document.getElementById('btn-host-disconnect');
+
+    if (btnHostConnect) {
+        btnHostConnect.addEventListener('click', function () {
+            connectPeerJS('host', syncState.code);
+        });
+    }
+
+    if (btnHostDisconnect) {
+        btnHostDisconnect.addEventListener('click', function () {
+            disconnectWebSocket();
+        });
+    }
+
     if (btnConnect) {
         btnConnect.addEventListener('click', function () {
-            let code = syncState.code;
-            if (syncState.role === 'client') {
-                code = clientCodeInput ? clientCodeInput.value.trim().toUpperCase() : '';
-                if (!code || code.length !== 6) {
-                    alert('Please enter a valid 6-character pairing code');
-                    return;
-                }
+            let code = clientCodeInput ? clientCodeInput.value.trim().toUpperCase() : '';
+            if (!code || code.length !== 6) {
+                alert('Please enter a valid 6-character pairing code');
+                return;
             }
 
             let customUrl = serverUrlInput ? serverUrlInput.value.trim() : '';
             if (customUrl && (customUrl.startsWith('ws://') || customUrl.startsWith('wss://'))) {
-                connectWebSocket(customUrl, syncState.role, code);
+                connectWebSocket(customUrl, 'client', code);
             } else {
-                connectPeerJS(syncState.role, code);
+                connectPeerJS('client', code);
             }
         });
     }
