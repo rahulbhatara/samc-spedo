@@ -163,10 +163,10 @@
                     </div>
                 </div>
 
-                <!-- Shared Input Server URL -->
-                <div class="sync-input-group">
+                <!-- Shared Input Server URL (Hidden - P2P Serverless Cloud) -->
+                <div class="sync-input-group hide">
                     <label for="sync-server-url">WebSocket Broker URL</label>
-                    <input type="text" id="sync-server-url" placeholder="ws://localhost:8080 or wss://...">
+                    <input type="text" id="sync-server-url" placeholder="P2P Serverless Cloud Active">
                 </div>
 
                 <!-- Sync Status State -->
@@ -183,6 +183,7 @@
         </div>
     </div>
 
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
     <script src="cef.js"></script>
 </body>
 

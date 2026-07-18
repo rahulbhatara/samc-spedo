@@ -388,16 +388,29 @@ function stopBlink(el) {
 }
 
 function broadcastTelemetry(key, value) {
-    if (syncState.mode !== 'host' || !syncState.connected || !syncState.socket) return;
+    if (syncState.mode !== 'host' || !syncState.connected) return;
     pendingTelemetry[key] = value;
     if (!telemetryTimeout) {
         telemetryTimeout = setTimeout(function () {
-            if (syncState.socket && syncState.socket.readyState === WebSocket.OPEN) {
-                syncState.socket.send(JSON.stringify({
-                    type: 'telemetry',
-                    data: pendingTelemetry
-                }));
+            const dataStr = JSON.stringify({
+                type: 'telemetry',
+                data: pendingTelemetry
+            });
+
+            // Send via PeerJS WebRTC P2P DataChannels if active
+            if (peerConnections.length > 0) {
+                peerConnections.forEach(function (conn) {
+                    if (conn && conn.open) {
+                        conn.send(dataStr);
+                    }
+                });
             }
+
+            // Fallback send via WebSocket socket if active
+            if (syncState.socket && syncState.socket.readyState === WebSocket.OPEN) {
+                syncState.socket.send(dataStr);
+            }
+
             pendingTelemetry = {};
             telemetryTimeout = null;
         }, 16.6);
@@ -846,6 +859,161 @@ function resetSpeedometerValues() {
     setOdometer(0);
 }
 
+let peerInstance = null;
+let peerConnections = [];
+let clientConnection = null;
+
+function connectPeerJS(role, roomCode) {
+    disconnectPeerJS();
+    if (syncState.socket) {
+        syncState.socket.close();
+        syncState.socket = null;
+    }
+
+    updateSyncStatus('connecting', 'Connecting P2P...');
+
+    const peerId = 'samc-spedo-' + roomCode.toLowerCase();
+
+    if (typeof Peer === 'undefined') {
+        console.warn('[SAMC Sync] PeerJS library not loaded, falling back to WebSocket');
+        const defaultWsUrl = (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + (window.location.hostname || 'localhost') + (window.location.protocol === 'https:' ? '' : ':8080');
+        connectWebSocket(defaultWsUrl, role, roomCode);
+        return;
+    }
+
+    if (role === 'host') {
+        try {
+            peerInstance = new Peer(peerId);
+        } catch (e) {
+            console.error('[SAMC PeerJS] Creation error:', e);
+            updateSyncStatus('disconnected', 'P2P Error');
+            return;
+        }
+
+        peerInstance.on('open', function (id) {
+            console.log('[SAMC PeerJS] Host Peer opened with ID:', id);
+            syncState.connected = true;
+            syncState.mode = 'host';
+            syncState.code = roomCode;
+
+            updateSyncStatus('connected', 'Host Connected (P2P)');
+            document.getElementById('btn-sync-connect').classList.add('hide');
+            document.getElementById('btn-sync-disconnect').classList.remove('hide');
+            setTimeout(hideSyncModal, 800);
+            updateActivePill('Host Ready', 'Waiting for Client...');
+        });
+
+        peerInstance.on('connection', function (conn) {
+            console.log('[SAMC PeerJS] Client connected to Host');
+            peerConnections.push(conn);
+
+            const dashboard = document.getElementById('speedometer');
+            if (dashboard) dashboard.classList.add('sync-hidden');
+            updateActivePill('Syncing HUD', 'Code: ' + syncState.code);
+            const activePill = document.getElementById('sync-active-pill');
+            if (activePill) activePill.classList.remove('hide');
+            cleanupSpeedometer();
+
+            conn.on('close', function () {
+                peerConnections = peerConnections.filter(function (c) { return c !== conn; });
+                console.log('[SAMC PeerJS] Client disconnected. Remaining:', peerConnections.length);
+                if (peerConnections.length === 0) {
+                    const dashboard = document.getElementById('speedometer');
+                    if (dashboard) dashboard.classList.remove('sync-hidden');
+                    const activePill = document.getElementById('sync-active-pill');
+                    if (activePill) activePill.classList.add('hide');
+                    renderDirty = true;
+                    startAnimation();
+                }
+            });
+        });
+
+        peerInstance.on('error', function (err) {
+            console.error('[SAMC PeerJS] Host error:', err);
+            updateSyncStatus('disconnected', 'P2P Error: ' + (err.type || 'Connection failed'));
+        });
+
+    } else if (role === 'client') {
+        try {
+            peerInstance = new Peer();
+        } catch (e) {
+            console.error('[SAMC PeerJS] Creation error:', e);
+            updateSyncStatus('disconnected', 'P2P Error');
+            return;
+        }
+
+        peerInstance.on('open', function (id) {
+            console.log('[SAMC PeerJS] Client Peer opened with ID:', id);
+            clientConnection = peerInstance.connect(peerId);
+
+            clientConnection.on('open', function () {
+                console.log('[SAMC PeerJS] Client connected to Host:', peerId);
+                syncState.connected = true;
+                syncState.mode = 'client';
+                syncState.code = roomCode;
+
+                updateSyncStatus('connected', 'Client Connected (P2P)');
+                localStorage.setItem('spedo_sync_code', roomCode);
+
+                document.getElementById('btn-sync-connect').classList.add('hide');
+                document.getElementById('btn-sync-disconnect').classList.remove('hide');
+                setTimeout(hideSyncModal, 800);
+
+                const dashboard = document.getElementById('speedometer');
+                if (dashboard) dashboard.classList.remove('sync-hidden');
+            });
+
+            clientConnection.on('data', function (data) {
+                try {
+                    const msg = typeof data === 'string' ? JSON.parse(data) : data;
+                    if (msg.type === 'telemetry' && syncState.mode === 'client') {
+                        const d = msg.data;
+                        if (d.engine !== undefined) setEngine(d.engine);
+                        if (d.speed !== undefined) setSpeed(d.speed);
+                        if (d.rpm !== undefined) setRPM(d.rpm);
+                        if (d.fuel !== undefined) setFuel(d.fuel);
+                        if (d.health !== undefined) setHealth(d.health);
+                        if (d.gear !== undefined) setGear(d.gear);
+                        if (d.headlights !== undefined) setHeadlights(d.headlights);
+                        if (d.leftIndicator !== undefined) setLeftIndicator(d.leftIndicator);
+                        if (d.rightIndicator !== undefined) setRightIndicator(d.rightIndicator);
+                        if (d.seatbelt !== undefined) setSeatbelts(d.seatbelt);
+                        if (d.odometer !== undefined) setOdometer(d.odometer);
+                    }
+                } catch (e) {
+                    console.error('[SAMC PeerJS] Data parsing error:', e);
+                }
+            });
+
+            clientConnection.on('close', function () {
+                console.log('[SAMC PeerJS] Host connection closed');
+                resetSpeedometerValues();
+                handleDisconnectState();
+            });
+        });
+
+        peerInstance.on('error', function (err) {
+            console.error('[SAMC PeerJS] Client error:', err);
+            updateSyncStatus('disconnected', 'P2P Error: ' + (err.type || 'Host not found'));
+        });
+    }
+}
+
+function disconnectPeerJS() {
+    if (clientConnection) {
+        clientConnection.close();
+        clientConnection = null;
+    }
+    if (peerConnections && peerConnections.length > 0) {
+        peerConnections.forEach(function (c) { if (c) c.close(); });
+        peerConnections = [];
+    }
+    if (peerInstance) {
+        peerInstance.destroy();
+        peerInstance = null;
+    }
+}
+
 function connectWebSocket(url, role, roomCode) {
     if (syncState.socket) {
         syncState.socket.close();
@@ -962,6 +1130,7 @@ function connectWebSocket(url, role, roomCode) {
 }
 
 function disconnectWebSocket() {
+    disconnectPeerJS();
     if (syncState.socket) {
         syncState.socket.close();
         syncState.socket = null;
@@ -1034,20 +1203,6 @@ function setupSyncSystem() {
         });
     }
 
-    const isHttps = window.location.protocol === 'https:';
-    const wsProtocol = isHttps ? 'wss://' : 'ws://';
-    const defaultHost = (window.location.hostname && window.location.hostname !== '') ? window.location.hostname : 'localhost';
-    const defaultWsUrl = isHttps ? (wsProtocol + defaultHost) : (wsProtocol + defaultHost + ':8080');
-
-    const cachedUrl = localStorage.getItem('spedo_sync_url');
-    if (cachedUrl) {
-        syncState.serverUrl = cachedUrl;
-        if (serverUrlInput) serverUrlInput.value = cachedUrl;
-    } else {
-        syncState.serverUrl = defaultWsUrl;
-        if (serverUrlInput) serverUrlInput.value = defaultWsUrl;
-    }
-
     const cachedCode = localStorage.getItem('spedo_sync_code');
     if (cachedCode && clientCodeInput) {
         clientCodeInput.value = cachedCode;
@@ -1095,11 +1250,6 @@ function setupSyncSystem() {
 
     if (btnConnect) {
         btnConnect.addEventListener('click', function () {
-            let url = serverUrlInput ? serverUrlInput.value.trim() : '';
-            if (!url) {
-                url = defaultWsUrl;
-            }
-
             let code = syncState.code;
             if (syncState.role === 'client') {
                 code = clientCodeInput ? clientCodeInput.value.trim().toUpperCase() : '';
@@ -1109,7 +1259,12 @@ function setupSyncSystem() {
                 }
             }
 
-            connectWebSocket(url, syncState.role, code);
+            let customUrl = serverUrlInput ? serverUrlInput.value.trim() : '';
+            if (customUrl && (customUrl.startsWith('ws://') || customUrl.startsWith('wss://'))) {
+                connectWebSocket(customUrl, syncState.role, code);
+            } else {
+                connectPeerJS(syncState.role, code);
+            }
         });
     }
 
@@ -1157,18 +1312,16 @@ function setupSyncSystem() {
             }
         }
 
-        if (paramServer) {
-            syncState.serverUrl = paramServer;
-            if (serverUrlInput) serverUrlInput.value = paramServer;
-        }
-
         const finalCode = mode === 'host' ? syncState.code : (paramCode ? paramCode.toUpperCase() : '');
-        const finalServer = paramServer || syncState.serverUrl || defaultWsUrl;
 
         if (finalCode && finalCode.length === 6) {
-            console.log('[SAMC Sync] Auto-connecting from query parameters: Mode=' + mode + ', Room=' + finalCode + ', Server=' + finalServer);
+            console.log('[SAMC Sync] Auto-connecting from query parameters: Mode=' + mode + ', Room=' + finalCode);
             setTimeout(function () {
-                connectWebSocket(finalServer, mode, finalCode);
+                if (paramServer && (paramServer.startsWith('ws://') || paramServer.startsWith('wss://'))) {
+                    connectWebSocket(paramServer, mode, finalCode);
+                } else {
+                    connectPeerJS(mode, finalCode);
+                }
             }, 100);
         }
     }
